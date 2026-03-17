@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../lib/api'
 import StatusBadge from '../components/StatusBadge'
+import PageHeader from '../components/PageHeader'
 import {
   ClipboardList,
   CheckCircle2,
@@ -78,20 +79,20 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Overview of eligibility checks across all jobs</p>
-        </div>
-        <button
-          onClick={() => { setLoading(true); fetchJobs() }}
-          className="btn-ghost flex items-center gap-2 text-sm"
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Overview of eligibility checks across all jobs."
+        icon={ClipboardList}
+        action={
+          <button
+            onClick={() => { setLoading(true); fetchJobs() }}
+            className="btn-ghost flex items-center gap-2 text-sm"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -124,36 +125,36 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
-                <tr className="text-slate-500 text-xs uppercase tracking-wider bg-slate-50/30">
-                  <th className="px-6 py-4 text-left font-semibold">File</th>
-                  <th className="px-6 py-4 text-left font-semibold">Status</th>
-                  <th className="px-6 py-4 text-right font-semibold">Total</th>
-                  <th className="px-6 py-4 text-right font-semibold">Eligible</th>
-                  <th className="px-6 py-4 text-right font-semibold">Not Eligible</th>
-                  <th className="px-6 py-4 text-right font-semibold">Errors</th>
-                  <th className="px-6 py-4 text-left font-semibold">Date</th>
-                  <th className="px-6 py-4" />
+                <tr className="text-slate-500 text-xs uppercase tracking-[0.15em] bg-brand-50/80">
+                  <th className="px-4 py-2.5 text-left font-semibold">File</th>
+                  <th className="px-4 py-2.5 text-left font-semibold">Status</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Total</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Eligible</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Not Eligible</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Errors</th>
+                  <th className="px-4 py-2.5 text-left font-semibold">Date</th>
+                  <th className="px-4 py-2.5" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 border-t border-slate-100">
                 {jobs.slice(0, 8).map((job) => (
                   <tr key={job.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-slate-900 font-bold max-w-[200px] truncate">
+                    <td className="px-4 py-2 text-slate-900 font-semibold max-w-[200px] truncate text-xs">
                       {job.filename}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <StatusBadge status={job.status as never} />
                     </td>
-                    <td className="px-6 py-4 text-right text-slate-600 font-medium">{job.totalCount}</td>
-                    <td className="px-6 py-4 text-right text-emerald-600 font-semibold">{job.eligibleCount ?? 0}</td>
-                    <td className="px-6 py-4 text-right text-rose-600 font-semibold">{job.notEligibleCount ?? 0}</td>
-                    <td className="px-6 py-4 text-right text-amber-600 font-semibold">{job.errorCount ?? 0}</td>
-                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap font-medium text-xs">
+                    <td className="px-4 py-2 text-right text-slate-600 font-semibold text-xs">{job.totalCount}</td>
+                    <td className="px-4 py-2 text-right text-emerald-600 font-semibold text-xs">{job.eligibleCount ?? 0}</td>
+                    <td className="px-4 py-2 text-right text-rose-600 font-semibold text-xs">{job.notEligibleCount ?? 0}</td>
+                    <td className="px-4 py-2 text-right text-amber-600 font-semibold text-xs">{job.errorCount ?? 0}</td>
+                    <td className="px-4 py-2 text-slate-500 whitespace-nowrap font-medium text-xs">
                       {new Date(job.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-2 text-right">
                       <Link
                         to={`/results/${job.id}`}
                         className="text-brand-600 hover:text-brand-700 text-xs font-bold flex items-center gap-1 justify-end"

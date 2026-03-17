@@ -1,79 +1,163 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { useAuth } from '../lib/auth-context'
+import { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../lib/auth-context";
 import {
   LayoutDashboard,
   Users,
+  Building2,
   Upload,
   ClipboardList,
+  ShieldCheck,
   LogOut,
   Activity,
-} from 'lucide-react'
-
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/patients', icon: Users, label: 'Patients' },
-  { to: '/upload', icon: Upload, label: 'Upload CSV' },
-  { to: '/results', icon: ClipboardList, label: 'Results' },
-]
+  PanelLeftClose,
+  PanelLeftOpen,
+  Shield,
+  CreditCard,
+  Briefcase,
+} from "lucide-react";
 
 export default function Layout() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex h-full bg-slate-50">
-      {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col shadow-sm relative z-10">
-        {/* Logo */}
-        <div className="p-6 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-500 flex items-center justify-center shadow-sm shadow-brand-500/20">
-              <Activity size={18} className="text-white" />
+    <div className="flex h-full bg-transparent">
+      <aside
+        className={`${collapsed ? "w-20" : "w-72"} flex-shrink-0 bg-ink-950 text-white flex flex-col shadow-xl relative z-10 transition-all duration-300`}
+      >
+        {/* Header with Logo and Toggle */}
+        <div className="px-4 py-5 border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center justify-between gap-3">
+            {/* Logo Section */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex-shrink-0 flex items-center justify-center shadow-lg">
+                <Activity size={20} className="text-white" />
+              </div>
+              {!collapsed && (
+                <div className="min-w-0">
+                  <p className="font-bold text-white text-lg tracking-tight leading-none">
+                    VoiceAI
+                  </p>
+                  <p className="text-xs text-brand-300 font-medium mt-0.5">
+                    Agent
+                  </p>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="font-bold text-slate-900 text-sm">VoiceAI</p>
-              <p className="text-xs text-slate-500">Eligibility Portal</p>
-            </div>
+
+            {/* Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setCollapsed((value) => !value)}
+              className="flex-shrink-0 p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 text-brand-300 hover:text-white"
+              title={collapsed ? "Expand" : "Collapse"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={18} />
+              ) : (
+                <PanelLeftClose size={18} />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map(({ to, icon: Icon, label, end }) => (
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto">
+          {/* Operations Section */}
+          {!collapsed && (
+            <div className="px-2 py-3 mt-4 mb-2">
+              <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider">
+                Operations
+              </p>
+            </div>
+          )}
+          {[
+            { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true },
+            { to: "/patients", icon: Users, label: "Patients" },
+            { to: "/upload", icon: Upload, label: "Upload CSV" },
+            { to: "/results", icon: ClipboardList, label: "Results" },
+            { to: "/coverage", icon: ShieldCheck, label: "Coverage" },
+          ].map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                `flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive
-                    ? 'bg-brand-50 text-brand-600 border border-brand-100 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
+                    ? "bg-brand-500 text-white shadow-md"
+                    : "text-brand-100 hover:text-white hover:bg-white/10"
                 }`
               }
+              title={collapsed ? label : undefined}
             >
-              <Icon size={16} />
-              {label}
+              <Icon size={18} className="flex-shrink-0" />
+              {!collapsed && <span>{label}</span>}
+            </NavLink>
+          ))}
+
+          {/* Master Data Section */}
+          {!collapsed && (
+            <div className="px-2 py-2 mb-2">
+              <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider">
+                Master Data
+              </p>
+            </div>
+          )}
+          {[
+            { to: "/providers", icon: Building2, label: "Providers" },
+            { to: "/insurances", icon: Shield, label: "Insurances" },
+            { to: "/payers", icon: CreditCard, label: "Payers" },
+            { to: "/practices", icon: Briefcase, label: "Practices" },
+          ].map(({ to, icon: Icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isActive
+                    ? "bg-brand-500 text-white shadow-md"
+                    : "text-brand-100 hover:text-white hover:bg-white/10"
+                }`
+              }
+              title={collapsed ? label : undefined}
+            >
+              <Icon size={18} className="flex-shrink-0" />
+              {!collapsed && <span>{label}</span>}
             </NavLink>
           ))}
         </nav>
 
-        {/* User footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 text-sm font-bold border border-brand-200 shadow-sm">
+        {/* User Section */}
+        <div className="px-3 py-4 border-t border-white/10 bg-white/5 flex-shrink-0 space-y-3">
+          {/* User Profile */}
+          <div
+            className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} p-2.5 rounded-lg bg-white/5 border border-white/10`}
+          >
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
               {user?.email?.[0]?.toUpperCase()}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-900 truncate">{user?.email}</p>
-              <p className="text-[11px] font-medium text-slate-500 capitalize leading-none mt-0.5">{user?.role?.toLowerCase()}</p>
-            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-white truncate">
+                  {user?.email}
+                </p>
+                <p className="text-[10px] font-medium text-brand-300 capitalize leading-none mt-0.5">
+                  {user?.role?.toLowerCase()}
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Logout Button */}
           <button
             onClick={logout}
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-transparent hover:border-red-100"
+            className={`w-full flex items-center ${collapsed ? "justify-center" : "gap-2"} px-3 py-2.5 text-sm font-medium text-brand-100 hover:text-white hover:bg-red-500/20 hover:border-red-400/30 rounded-lg transition-all duration-200 border border-white/10`}
+            title={collapsed ? "Sign out" : undefined}
           >
-            <LogOut size={14} />
-            Sign out
+            <LogOut size={16} className="flex-shrink-0" />
+            {!collapsed && "Sign out"}
           </button>
         </div>
       </aside>
@@ -83,5 +167,5 @@ export default function Layout() {
         <Outlet />
       </main>
     </div>
-  )
+  );
 }

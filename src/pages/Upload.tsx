@@ -8,7 +8,6 @@ import {
   X,
   CheckCircle2,
   Loader2,
-  AlertTriangle,
   Download,
 } from 'lucide-react'
 

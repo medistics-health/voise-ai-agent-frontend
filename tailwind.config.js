@@ -4,29 +4,37 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: '#f8fafc', // Replacing dark navy with light slates/grays
-          900: '#f1f5f9',
-          800: '#e2e8f0',
-          700: '#cbd5e1',
-          600: '#94a3b8',
+        ink: {
+          950: '#021236',
+          900: '#0a1d4c',
+          100: '#e8efff',
+          50: '#f4f7ff',
         },
         brand: {
-          500: '#0ea5e9', // Medical blue
-          600: '#0284c7',
-          700: '#0369a1',
-          300: '#7dd3fc',
-          400: '#38bdf8',
+          700: '#2455cd',
+          600: '#2f63df',
+          500: '#3970ee',
+          300: '#91b2ff',
+          100: '#e9f0ff',
+          50: '#f5f8ff',
+        },
+        success: {
+          600: '#3cb34e',
+          100: '#e8f8eb',
+        },
+        paper: {
+          0: '#ffffff',
+          50: '#f8fbff',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Google Sans"', '"Google Sans Text"', '"Product Sans"', '"Public Sans"', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       },
       boxShadow: {
-        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+        soft: '0 18px 45px -24px rgba(2, 18, 54, 0.3)',
       }
     },
   },

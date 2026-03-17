@@ -5,8 +5,13 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Patients from './pages/Patients'
+import Providers from './pages/Providers'
+import Insurance from './pages/Insurance'
+import Payer from './pages/Payer'
+import Practice from './pages/Practice'
 import Upload from './pages/Upload'
 import Results from './pages/Results'
+import Coverage from './pages/Coverage'
 
 export default function App() {
   return (
@@ -21,9 +26,14 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/patients" element={<Patients />} />
+            <Route path="/providers" element={<Providers />} />
+            <Route path="/insurances" element={<Insurance />} />
+            <Route path="/payers" element={<Payer />} />
+            <Route path="/practices" element={<Practice />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/results" element={<Results />} />
             <Route path="/results/:jobId" element={<Results />} />
+            <Route path="/coverage" element={<Coverage />} />
           </Route>
         </Route>
 
