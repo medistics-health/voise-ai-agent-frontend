@@ -6,6 +6,8 @@ import { Users, Search, User, Pencil, PlusCircle } from 'lucide-react'
 import AppModal from '../components/AppModal'
 import PageHeader from '../components/PageHeader'
 import TablePagination from '../components/TablePagination'
+import AddressInput from '../components/AddressInput'
+import { formatFullAddress } from '../lib/address'
 
 interface Patient {
   id: string
@@ -16,8 +18,11 @@ interface Patient {
   gender?: string
   email?: string
   mobileNumber?: string
-  address?: string
-  zipCode?: string
+  addressLine1?: string
+  addressLine2?: string
+  city?: string
+  state?: string
+  zip?: string
   payerName: string
   createdAt: string
 }
@@ -30,8 +35,11 @@ interface PatientFormValues {
   gender: string
   email: string
   mobileNumber: string
-  address: string
-  zipCode: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  state: string
+  zip: string
   payerName: string
 }
 
@@ -50,8 +58,11 @@ const defaultValues: PatientFormValues = {
   gender: '',
   email: '',
   mobileNumber: '',
-  address: '',
-  zipCode: '',
+  addressLine1: '',
+  addressLine2: '',
+  city: '',
+  state: '',
+  zip: '',
   payerName: '',
 }
 
@@ -71,7 +82,7 @@ export default function Patients() {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<PatientFormValues>({ defaultValues })
+  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<PatientFormValues>({ defaultValues })
 
   const fetchPatients = useCallback(async (page: number, searchTerm: string) => {
     setLoading(true)
@@ -111,8 +122,11 @@ export default function Patients() {
       gender: patient.gender || '',
       email: patient.email || '',
       mobileNumber: patient.mobileNumber || '',
-      address: patient.address || '',
-      zipCode: patient.zipCode || '',
+      addressLine1: patient.addressLine1 || '',
+      addressLine2: patient.addressLine2 || '',
+      city: patient.city || '',
+      state: patient.state || '',
+      zip: patient.zip || '',
       payerName: patient.payerName || '',
     })
     setIsModalOpen(true)
@@ -181,6 +195,7 @@ export default function Patients() {
                   <th className="px-4 py-2.5 text-left">DOB</th>
                   <th className="px-4 py-2.5 text-left">Gender</th>
                   <th className="px-4 py-2.5 text-left">Contact</th>
+                  <th className="px-4 py-2.5 text-left">Email</th>
                   <th className="px-4 py-2.5 text-left">Address</th>
                   <th className="px-4 py-2.5 text-left">Actions</th>
                 </tr>
@@ -201,12 +216,16 @@ export default function Patients() {
                     <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{patient.gender || ' - '}</td>
                     <td className="px-4 py-2 text-slate-500 text-xs">
                       <div className="flex flex-col gap-0.5">
-                        {patient.email && <span>{patient.email}</span>}
                         {patient.mobileNumber && <span>{patient.mobileNumber}</span>}
                         {!patient.email && !patient.mobileNumber && <span> - </span>}
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-slate-500 text-xs max-w-[220px] truncate">{patient.address ? `${patient.address}${patient.zipCode ? `, ${patient.zipCode}` : ''}` : ' - '}</td>
+                     <td className="px-4 py-2 text-slate-500 text-xs">
+                      <div className="flex flex-col gap-0.5">
+                        {patient.email && <span>{patient.email}</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-slate-500 text-xs max-w-[320px] whitespace-normal">{formatFullAddress(patient) || ' - '}</td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <button onClick={() => openEditModal(patient)} className="btn-ghost px-3 py-2 text-xs inline-flex items-center gap-2"><Pencil size={13} />Edit</button>
@@ -265,20 +284,11 @@ export default function Patients() {
                 {errors.mobileNumber && <p className="text-xs text-red-600 mt-1">{errors.mobileNumber.message}</p>}
               </div>
               <div>
-                {label('Address')}
-                <input className="input-field" {...register('address', { maxLength: { value: 255, message: 'Maximum 255 characters' } })} />
-                {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address.message}</p>}
-              </div>
-              <div>
-                {label('Zip Code')}
-                <input className="input-field" {...register('zipCode', { pattern: { value: /^[A-Za-z0-9\-\s]{4,12}$/, message: 'Enter a valid ZIP code' } })} />
-                {errors.zipCode && <p className="text-xs text-red-600 mt-1">{errors.zipCode.message}</p>}
-              </div>
-              <div>
                 {label('Payer Name', true)}
                 <input className="input-field" {...register('payerName', { required: 'Payer name is required', maxLength: { value: 100, message: 'Maximum 100 characters' } })} />
                 {errors.payerName && <p className="text-xs text-red-600 mt-1">{errors.payerName.message}</p>}
               </div>
+              <AddressInput fieldNamePrefix="address" register={register} errors={errors} watch={watch} optional={true} />
               <div className="md:col-span-2 xl:col-span-3 flex items-center gap-3 pt-2">
                 <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingPatient ? 'Update Patient' : 'Create Patient'}</button>
                 <button type="button" onClick={closeModal} className="btn-ghost">Cancel</button>

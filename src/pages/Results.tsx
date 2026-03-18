@@ -43,6 +43,8 @@ interface Check {
   id: string
   patientId: string
   status: 'ELIGIBLE' | 'NOT_ELIGIBLE' | 'ERROR' | 'PENDING' | 'RUNNING'
+  importedPlanName?: string
+  importedMemberId?: string
   payerStatus?: string
   patient?: {
     id: string
@@ -78,6 +80,14 @@ function formatBenefitPeriod(coverage?: Coverage) {
   }
 
   return ' - '
+}
+
+function getPlanName(check: Check) {
+  return check.coverage?.planName ?? check.importedPlanName ?? ''
+}
+
+function getMemberId(check: Check) {
+  return check.coverage?.memberId ?? check.importedMemberId ?? ''
 }
 
 function JobList() {
@@ -215,8 +225,8 @@ function JobDetail({ jobId }: { jobId: string }) {
       check.patient?.gender ?? '',
       check.status,
       check.payerStatus ?? '',
-      check.coverage?.planName ?? '',
-      check.coverage?.memberId ?? '',
+      getPlanName(check),
+      getMemberId(check),
       check.coverage?.subscriberId ?? '',
       check.coverage?.groupName ?? '',
       check.coverage?.groupNumber ?? '',
@@ -340,7 +350,7 @@ function JobDetail({ jobId }: { jobId: string }) {
                 <ClipboardList size={18} className="text-brand-600" />
                 <div>
                   <h2 className="panel-title">Coverage</h2>
-                  <p className="page-subtitle mt-0">Saved only from Coverage response</p>
+                  <p className="page-subtitle mt-0">Shows saved coverage data or CSV-provided plan and member values</p>
                 </div>
               </div>
             </div>
@@ -365,8 +375,8 @@ function JobDetail({ jobId }: { jobId: string }) {
                     <tr key={`${check.id}-coverage`} className="hover:bg-brand-50/40 transition-colors">
                       <td className="px-4 py-2 text-ink-950 font-semibold whitespace-nowrap text-xs">{formatPatientName(check)}</td>
                       <td className="px-4 py-2 text-slate-600 text-xs font-mono whitespace-nowrap">{check.coverage?.patientId ?? check.patientId}</td>
-                      <td className="px-4 py-2 text-slate-700 text-xs font-semibold max-w-[220px] truncate">{check.coverage?.planName ?? ' - '}</td>
-                      <td className="px-4 py-2 text-slate-600 text-xs font-mono whitespace-nowrap">{check.coverage?.memberId ?? ' - '}</td>
+                      <td className="px-4 py-2 text-slate-700 text-xs font-semibold max-w-[220px] truncate">{getPlanName(check) || ' - '}</td>
+                      <td className="px-4 py-2 text-slate-600 text-xs font-mono whitespace-nowrap">{getMemberId(check) || ' - '}</td>
                       <td className="px-4 py-2 text-slate-600 text-xs font-mono whitespace-nowrap">{check.coverage?.subscriberId ?? ' - '}</td>
                       <td className="px-4 py-2 text-slate-700 text-xs font-semibold whitespace-nowrap">{check.coverage?.groupName ?? ' - '}</td>
                       <td className="px-4 py-2 text-slate-600 text-xs font-mono whitespace-nowrap">{check.coverage?.groupNumber ?? ' - '}</td>

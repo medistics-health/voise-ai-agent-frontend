@@ -7,19 +7,29 @@ import AppModal from '../components/AppModal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import PageHeader from '../components/PageHeader'
 import TablePagination from '../components/TablePagination'
+import AddressInput from '../components/AddressInput'
+import { formatFullAddress } from '../lib/address'
 
 interface Insurance {
   id: string
   name: string
-  address: string
   phone: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  zip: string
   createdAt: string
 }
 
 interface InsuranceFormValues {
   name: string
-  address: string
   phone: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  zip: string
 }
 
 interface Pagination {
@@ -31,8 +41,12 @@ interface Pagination {
 
 const defaultValues: InsuranceFormValues = {
   name: '',
-  address: '',
   phone: '',
+  addressLine1: '',
+  addressLine2: '',
+  city: '',
+  state: '',
+  zip: '',
 }
 
 const label = (text: string, required = false) => (
@@ -53,7 +67,7 @@ export default function Insurance() {
   const [insuranceToDelete, setInsuranceToDelete] = useState<Insurance | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<InsuranceFormValues>({ defaultValues })
+  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<InsuranceFormValues>({ defaultValues })
 
   const fetchInsurances = useCallback(async (page: number, searchTerm: string) => {
     setLoading(true)
@@ -87,8 +101,12 @@ export default function Insurance() {
     setEditingInsurance(insurance)
     reset({
       name: insurance.name || '',
-      address: insurance.address || '',
       phone: insurance.phone || '',
+      addressLine1: insurance.addressLine1 || '',
+      addressLine2: insurance.addressLine2 || '',
+      city: insurance.city || '',
+      state: insurance.state || '',
+      zip: insurance.zip || '',
     })
     setIsModalOpen(true)
   }
@@ -141,7 +159,7 @@ export default function Insurance() {
   return (
     <div className="p-8 space-y-6">
       <PageHeader
-        title="Insurance Master"
+        title="Insurance"
         subtitle="Manage insurance companies with contact information."
         icon={Shield}
         action={
@@ -169,6 +187,8 @@ export default function Insurance() {
                 <tr className="text-slate-500 text-xs uppercase tracking-[0.15em] border-b border-brand-100 bg-brand-50/80">
                   <th className="px-4 py-2.5 text-left">Insurance Name</th>
                   <th className="px-4 py-2.5 text-left">Address</th>
+                  <th className="px-4 py-2.5 text-left">City</th>
+                  <th className="px-4 py-2.5 text-left">State</th>
                   <th className="px-4 py-2.5 text-left">Phone</th>
                   <th className="px-4 py-2.5 text-left">Actions</th>
                 </tr>
@@ -177,7 +197,9 @@ export default function Insurance() {
                 {insurances.map((insurance) => (
                   <tr key={insurance.id} className="hover:bg-brand-50/40 transition-colors">
                     <td className="px-4 py-2 text-ink-950 font-semibold text-xs">{insurance.name}</td>
-                    <td className="px-4 py-2 text-slate-500 text-xs">{insurance.address}</td>
+                    <td className="px-4 py-2 text-slate-500 text-xs max-w-[320px] whitespace-normal">{formatFullAddress(insurance) || ' - '}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs">{insurance.city}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{insurance.state}</td>
                     <td className="px-4 py-2 text-slate-600 text-xs font-mono">{insurance.phone}</td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
@@ -196,12 +218,12 @@ export default function Insurance() {
       <TablePagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onPageChange={goToPage} />
 
       {isModalOpen && (
-        <AppModal title={editingInsurance ? 'Edit Insurance' : 'Add Insurance'} subtitle="Required fields are marked with an asterisk." onClose={closeModal} maxWidthClassName="max-w-2xl">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-6">
-              <div>
+        <AppModal title={editingInsurance ? 'Edit Insurance' : 'Add Insurance'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+              <div className="xl:col-span-2">
                 {label('Insurance Name', true)}
                 <input
-                  {...register('name', { required: 'Insurance name is required' })}
+                  {...register('name', { required: 'Insurance name is required', minLength: { value: 3, message: 'Minimum 3 characters' }, maxLength: { value: 255, message: 'Maximum 255 characters' } })}
                   className="input-field"
                   placeholder="Enter insurance name"
                 />
@@ -209,19 +231,9 @@ export default function Insurance() {
               </div>
 
               <div>
-                {label('Address', true)}
-                <input
-                  {...register('address', { required: 'Address is required' })}
-                  className="input-field"
-                  placeholder="Enter address"
-                />
-                {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address.message}</p>}
-              </div>
-
-              <div>
                 {label('Phone Number', true)}
                 <input
-                  {...register('phone', { required: 'Phone number is required' })}
+                  {...register('phone', { required: 'Phone number is required', pattern: { value: /^[0-9()+\-\s]*$/, message: 'Enter a valid phone number' } })}
                   className="input-field"
                   placeholder="Enter phone number"
                   type="tel"
@@ -229,13 +241,11 @@ export default function Insurance() {
                 {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone.message}</p>}
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={closeModal} className="flex-1 btn-ghost">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="flex-1 btn-primary">
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
+              <AddressInput fieldNamePrefix="address" register={register} errors={errors} watch={watch} />
+
+              <div className="md:col-span-2 xl:col-span-3 flex items-center gap-3 pt-2">
+                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingInsurance ? 'Update Insurance' : 'Create Insurance'}</button>
+                <button type="button" onClick={closeModal} className="btn-ghost">Cancel</button>
               </div>
           </form>
         </AppModal>

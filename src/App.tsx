@@ -9,6 +9,8 @@ import Providers from './pages/Providers'
 import Insurance from './pages/Insurance'
 import Payer from './pages/Payer'
 import Practice from './pages/Practice'
+import Doctors from './pages/Doctors'
+import PracticeLocations from './pages/PracticeLocations'
 import Upload from './pages/Upload'
 import Results from './pages/Results'
 import Coverage from './pages/Coverage'
@@ -27,6 +29,8 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/patients" element={<Patients />} />
             <Route path="/providers" element={<Providers />} />
+            <Route path="/doctors" element={<Doctors />} />
+            <Route path="/practice-locations" element={<PracticeLocations />} />
             <Route path="/insurances" element={<Insurance />} />
             <Route path="/payers" element={<Payer />} />
             <Route path="/practices" element={<Practice />} />

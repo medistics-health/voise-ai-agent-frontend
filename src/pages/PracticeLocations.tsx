@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
-import { Building2, Search, Pencil, Trash2, PlusCircle } from 'lucide-react'
+import { MapPin, Search, Pencil, Trash2, PlusCircle } from 'lucide-react'
 import AppModal from '../components/AppModal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import PageHeader from '../components/PageHeader'
@@ -10,7 +10,7 @@ import TablePagination from '../components/TablePagination'
 import AddressInput from '../components/AddressInput'
 import { formatFullAddress } from '../lib/address'
 
-interface Provider {
+interface PracticeLocation {
   id: string
   name: string
   npi: string
@@ -19,11 +19,10 @@ interface Provider {
   city: string
   state: string
   zip: string
-  ein: string
   createdAt: string
 }
 
-interface ProviderFormValues {
+interface PracticeLocationFormValues {
   name: string
   npi: string
   addressLine1: string
@@ -31,7 +30,6 @@ interface ProviderFormValues {
   city: string
   state: string
   zip: string
-  ein: string
 }
 
 interface Pagination {
@@ -41,7 +39,7 @@ interface Pagination {
   totalPages: number
 }
 
-const defaultValues: ProviderFormValues = {
+const defaultValues: PracticeLocationFormValues = {
   name: '',
   npi: '',
   addressLine1: '',
@@ -49,7 +47,6 @@ const defaultValues: ProviderFormValues = {
   city: '',
   state: '',
   zip: '',
-  ein: '',
 }
 
 const label = (text: string, required = false) => (
@@ -58,36 +55,36 @@ const label = (text: string, required = false) => (
   </label>
 )
 
-export default function Providers() {
-  const [providers, setProviders] = useState<Provider[]>([])
+export default function PracticeLocations() {
+  const [locations, setLocations] = useState<PracticeLocation[]>([])
   const [pagination, setPagination] = useState<Pagination>({ total: 0, page: 1, limit: 10, totalPages: 0 })
   const [search, setSearch] = useState('')
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
-  const [providerToDelete, setProviderToDelete] = useState<Provider | null>(null)
+  const [editingLocation, setEditingLocation] = useState<PracticeLocation | null>(null)
+  const [locationToDelete, setLocationToDelete] = useState<PracticeLocation | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<ProviderFormValues>({ defaultValues })
+  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<PracticeLocationFormValues>({ defaultValues })
 
-  const fetchProviders = useCallback(async (page: number, searchTerm: string) => {
+  const fetchLocations = useCallback(async (page: number, searchTerm: string) => {
     setLoading(true)
     try {
-      const res = await api.get('/providers', { params: { page, limit: 10, search: searchTerm } })
-      setProviders(res.data.data.providers ?? [])
+      const res = await api.get('/practice-locations', { params: { page, limit: 10, search: searchTerm } })
+      setLocations(res.data.data.practiceLocations ?? [])
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Failed to load providers')
+      toast.error('Failed to load practice locations')
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchProviders(1, search)
-  }, [search, fetchProviders])
+    fetchLocations(1, search)
+  }, [search, fetchLocations])
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(inputValue), 350)
@@ -95,61 +92,60 @@ export default function Providers() {
   }, [inputValue])
 
   const openCreateModal = () => {
-    setEditingProvider(null)
+    setEditingLocation(null)
     reset(defaultValues)
     setIsModalOpen(true)
   }
 
-  const openEditModal = (provider: Provider) => {
-    setEditingProvider(provider)
+  const openEditModal = (location: PracticeLocation) => {
+    setEditingLocation(location)
     reset({
-      name: provider.name || '',
-      npi: provider.npi || '',
-      addressLine1: provider.addressLine1 || '',
-      addressLine2: provider.addressLine2 || '',
-      city: provider.city || '',
-      state: provider.state || '',
-      zip: provider.zip || '',
-      ein: provider.ein || '',
+      name: location.name || '',
+      npi: location.npi || '',
+      addressLine1: location.addressLine1 || '',
+      addressLine2: location.addressLine2 || '',
+      city: location.city || '',
+      state: location.state || '',
+      zip: location.zip || '',
     })
     setIsModalOpen(true)
   }
 
   const closeModal = () => {
-    setEditingProvider(null)
+    setEditingLocation(null)
     reset(defaultValues)
     setIsModalOpen(false)
   }
 
-  const onSubmit = async (values: ProviderFormValues) => {
+  const onSubmit = async (values: PracticeLocationFormValues) => {
     setSaving(true)
     try {
-      if (editingProvider) {
-        await api.put(`/providers/${editingProvider.id}`, values)
-        toast.success('Provider updated')
+      if (editingLocation) {
+        await api.put(`/practice-locations/${editingLocation.id}`, values)
+        toast.success('Practice location updated')
       } else {
-        await api.post('/providers', values)
-        toast.success('Provider created')
+        await api.post('/practice-locations', values)
+        toast.success('Practice location created')
       }
       closeModal()
-      fetchProviders(1, search)
+      fetchLocations(1, search)
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Unable to save provider')
+      toast.error(err?.response?.data?.message || 'Unable to save practice location')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!providerToDelete) return
+    if (!locationToDelete) return
     setDeleting(true)
     try {
-      await api.delete(`/providers/${providerToDelete.id}`)
-      toast.success('Provider deleted')
-      setProviderToDelete(null)
-      fetchProviders(1, search)
+      await api.delete(`/practice-locations/${locationToDelete.id}`)
+      toast.success('Practice location deleted')
+      setLocationToDelete(null)
+      fetchLocations(1, search)
     } catch {
-      toast.error('Unable to delete provider')
+      toast.error('Unable to delete practice location')
     } finally {
       setDeleting(false)
     }
@@ -157,18 +153,18 @@ export default function Providers() {
 
   const goToPage = (page: number) => {
     if (page < 1 || page > pagination.totalPages) return
-    fetchProviders(page, search)
+    fetchLocations(page, search)
   }
 
   return (
     <div className="p-8 space-y-6">
       <PageHeader
-        title="Providers"
-        subtitle="Manage healthcare providers with NPI, EIN, and location details."
-        icon={Building2}
+        title="Practice Locations"
+        subtitle="Manage your practice locations with NPI and address information."
+        icon={MapPin}
         action={
           <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2 flex-shrink-0">
-          <PlusCircle size={14} /> Add Provider
+          <PlusCircle size={14} /> Add Location
           </button>
         }
       />
@@ -176,14 +172,14 @@ export default function Providers() {
       {/* Search Bar */}
       <div className="relative max-w-sm">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input type="text" placeholder="Search providers..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="input-field pl-9" />
+        <input type="text" placeholder="Search locations..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="input-field pl-9" />
       </div>
 
       <div className="table-shell">
         {loading ? (
           <div className="p-16 flex justify-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
-        ) : providers.length === 0 ? (
-          <div className="p-16 text-center"><Building2 size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No providers found.</p></div>
+        ) : locations.length === 0 ? (
+          <div className="p-16 text-center"><MapPin size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No practice locations found.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -192,25 +188,25 @@ export default function Providers() {
                   <th className="px-4 py-2.5 text-left">Name</th>
                   <th className="px-4 py-2.5 text-left">NPI</th>
                   <th className="px-4 py-2.5 text-left">Address</th>
+                  <th className="px-4 py-2.5 text-left">City</th>
                   <th className="px-4 py-2.5 text-left">State</th>
                   <th className="px-4 py-2.5 text-left">Zip</th>
-                  <th className="px-4 py-2.5 text-left">EIN</th>
                   <th className="px-4 py-2.5 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-100">
-                {providers.map((provider) => (
-                  <tr key={provider.id} className="hover:bg-brand-50/40 transition-colors">
-                    <td className="px-4 py-2 text-ink-950 font-semibold text-xs">{provider.name}</td>
-                    <td className="px-4 py-2 text-slate-600 text-xs font-mono">{provider.npi}</td>
-                    <td className="px-4 py-2 text-slate-500 text-xs max-w-[320px] whitespace-normal">{formatFullAddress(provider) || ' - '}</td>
-                    <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{provider.state}</td>
-                    <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{provider.zip}</td>
-                    <td className="px-4 py-2 text-slate-600 text-xs font-mono">{provider.ein}</td>
+                {locations.map((location) => (
+                  <tr key={location.id} className="hover:bg-brand-50/40 transition-colors">
+                    <td className="px-4 py-2 text-ink-950 font-semibold text-xs">{location.name}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs font-mono">{location.npi}</td>
+                    <td className="px-4 py-2 text-slate-500 text-xs max-w-[320px] whitespace-normal">{formatFullAddress(location) || ' - '}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs">{location.city}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{location.state}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs">{location.zip}</td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEditModal(provider)} className="btn-ghost px-3 py-2 text-xs inline-flex items-center gap-2"><Pencil size={13} />Edit</button>
-                        <button onClick={() => setProviderToDelete(provider)} className="px-3 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold inline-flex items-center gap-2"><Trash2 size={13} />Delete</button>
+                        <button onClick={() => openEditModal(location)} className="btn-ghost px-3 py-2 text-xs inline-flex items-center gap-2"><Pencil size={13} />Edit</button>
+                        <button onClick={() => setLocationToDelete(location)} className="px-3 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold inline-flex items-center gap-2"><Trash2 size={13} />Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -223,10 +219,10 @@ export default function Providers() {
       </div>
 
       {isModalOpen && (
-        <AppModal title={editingProvider ? 'Edit Provider' : 'Add Provider'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
+        <AppModal title={editingLocation ? 'Edit Location' : 'Add Location'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
           <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
               <div className="xl:col-span-2">
-                {label('Name', true)}
+                {label('Location Name', true)}
                 <input className="input-field" {...register('name', { required: 'Name is required', minLength: { value: 3, message: 'Minimum 3 characters' }, maxLength: { value: 255, message: 'Maximum 255 characters' } })} />
                 {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}
               </div>
@@ -235,27 +231,22 @@ export default function Providers() {
                 <input className="input-field" {...register('npi', { required: 'NPI is required', pattern: { value: /^\d{10}$/, message: 'NPI must be 10 digits' } })} />
                 {errors.npi && <p className="text-xs text-red-600 mt-1">{errors.npi.message}</p>}
               </div>
-              <div>
-                {label('EIN', true)}
-                <input className="input-field" {...register('ein', { required: 'EIN is required', pattern: { value: /^\d{9}$/, message: 'EIN must be 9 digits' } })} />
-                {errors.ein && <p className="text-xs text-red-600 mt-1">{errors.ein.message}</p>}
-              </div>
               <AddressInput fieldNamePrefix="address" register={register} errors={errors} watch={watch} />
               <div className="md:col-span-2 xl:col-span-3 flex items-center gap-3 pt-2">
-                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Create Provider'}</button>
+                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingLocation ? 'Update Location' : 'Create Location'}</button>
                 <button type="button" onClick={closeModal} className="btn-ghost">Cancel</button>
               </div>
           </form>
         </AppModal>
       )}
 
-      {providerToDelete && (
+      {locationToDelete && (
         <ConfirmDialog
-          title="Delete Provider"
-          message={`Provider "${providerToDelete.name}" will be soft deleted.`}
-          confirmLabel="Delete Provider"
+          title="Delete Practice Location"
+          message={`Location "${locationToDelete.name}" will be soft deleted.`}
+          confirmLabel="Delete Location"
           onConfirm={handleDelete}
-          onClose={() => !deleting && setProviderToDelete(null)}
+          onClose={() => !deleting && setLocationToDelete(null)}
           confirmDisabled={deleting}
         />
       )}

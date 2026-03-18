@@ -56,8 +56,8 @@ export default function Upload() {
   }
 
   const handleDownloadSample = () => {
-    const header = 'Patient First Name,Patient Last Name,Patient Middle Name,Patient DOB,Patient Gender,Patient email,patient Mobile Number,Patient address,Patient Zip code\n'
-    const row = 'John,Doe,William,1985-04-12,Male,john@example.com,555-0100,123 Main St,12345\n'
+    const header = 'Patient First Name,Patient Last Name,Patient Middle Name,Patient DOB,Patient Gender,Patient email,patient Mobile Number,Patient Address Line 1,Patient Address Line 2,Patient City,Patient State,Patient Zip,Plan Name,Member ID\n'
+    const row = 'John,Doe,William,1985-04-12,Male,john@example.com,555-0100,123 Main St,Apt 4B,Dallas,TX,75001,UnitedHealthcare Choice Plus,MEM123456\n'
     const blob = new Blob([header + row], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -76,6 +76,9 @@ export default function Upload() {
         <h1 className="page-title">Upload CSV</h1>
         <p className="page-subtitle">
           Upload a CSV file to batch-check eligibility via UnitedHealthcare
+        </p>
+        <p className="text-sm text-slate-500 mt-2">
+          If both `Plan Name` and `Member ID` are present in the CSV, that row is added directly without calling the coverage API.
         </p>
       </div>
 
@@ -162,7 +165,7 @@ export default function Upload() {
             Need a template?
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Download our sample CSV file to ensure your data includes all required columns before uploading.
+            Download our sample CSV file to ensure your data includes the new patient address columns plus the optional `Plan Name` and `Member ID` columns before uploading.
           </p>
         </div>
         <button

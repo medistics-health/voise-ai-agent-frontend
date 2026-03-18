@@ -7,19 +7,29 @@ import AppModal from '../components/AppModal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import PageHeader from '../components/PageHeader'
 import TablePagination from '../components/TablePagination'
+import AddressInput from '../components/AddressInput'
+import { formatFullAddress } from '../lib/address'
 
 interface Practice {
   id: string
   name: string
-  address: string
   npi: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  zip: string
   createdAt: string
 }
 
 interface PracticeFormValues {
   name: string
-  address: string
   npi: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  zip: string
 }
 
 interface Pagination {
@@ -31,8 +41,12 @@ interface Pagination {
 
 const defaultValues: PracticeFormValues = {
   name: '',
-  address: '',
   npi: '',
+  addressLine1: '',
+  addressLine2: '',
+  city: '',
+  state: '',
+  zip: '',
 }
 
 const label = (text: string, required = false) => (
@@ -53,7 +67,7 @@ export default function PracticeModule() {
   const [practiceToDelete, setPracticeToDelete] = useState<Practice | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<PracticeFormValues>({ defaultValues })
+  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<PracticeFormValues>({ defaultValues })
 
   const fetchPractices = useCallback(async (page: number, searchTerm: string) => {
     setLoading(true)
@@ -87,8 +101,12 @@ export default function PracticeModule() {
     setEditingPractice(practice)
     reset({
       name: practice.name || '',
-      address: practice.address || '',
       npi: practice.npi || '',
+      addressLine1: practice.addressLine1 || '',
+      addressLine2: practice.addressLine2 || '',
+      city: practice.city || '',
+      state: practice.state || '',
+      zip: practice.zip || '',
     })
     setIsModalOpen(true)
   }
@@ -141,7 +159,7 @@ export default function PracticeModule() {
   return (
     <div className="p-8 space-y-6">
       <PageHeader
-        title="Practices"
+        title="Practices Group"
         subtitle="Manage medical practices with NPI and address information."
         icon={Briefcase}
         action={
@@ -169,6 +187,8 @@ export default function PracticeModule() {
                 <tr className="text-slate-500 text-xs uppercase tracking-[0.15em] border-b border-brand-100 bg-brand-50/80">
                   <th className="px-4 py-2.5 text-left">Practice Name</th>
                   <th className="px-4 py-2.5 text-left">Address</th>
+                  <th className="px-4 py-2.5 text-left">City</th>
+                  <th className="px-4 py-2.5 text-left">State</th>
                   <th className="px-4 py-2.5 text-left">NPI</th>
                   <th className="px-4 py-2.5 text-left">Actions</th>
                 </tr>
@@ -177,7 +197,9 @@ export default function PracticeModule() {
                 {practices.map((practice) => (
                   <tr key={practice.id} className="hover:bg-brand-50/40 transition-colors">
                     <td className="px-4 py-2 text-ink-950 font-semibold text-xs">{practice.name}</td>
-                    <td className="px-4 py-2 text-slate-500 text-xs">{practice.address}</td>
+                    <td className="px-4 py-2 text-slate-500 text-xs max-w-[320px] whitespace-normal">{formatFullAddress(practice) || ' - '}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs">{practice.city}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{practice.state}</td>
                     <td className="px-4 py-2 text-slate-600 text-xs font-mono">{practice.npi}</td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
@@ -196,12 +218,12 @@ export default function PracticeModule() {
       <TablePagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onPageChange={goToPage} />
 
       {isModalOpen && (
-        <AppModal title={editingPractice ? 'Edit Practice' : 'Add Practice'} subtitle="Required fields are marked with an asterisk." onClose={closeModal} maxWidthClassName="max-w-2xl">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-6">
-              <div>
+        <AppModal title={editingPractice ? 'Edit Practice' : 'Add Practice'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+              <div className="xl:col-span-2">
                 {label('Practice Name', true)}
                 <input
-                  {...register('name', { required: 'Practice name is required' })}
+                  {...register('name', { required: 'Practice name is required', minLength: { value: 3, message: 'Minimum 3 characters' }, maxLength: { value: 255, message: 'Maximum 255 characters' } })}
                   className="input-field"
                   placeholder="Enter practice name"
                 />
@@ -209,32 +231,20 @@ export default function PracticeModule() {
               </div>
 
               <div>
-                {label('Address', true)}
-                <input
-                  {...register('address', { required: 'Address is required' })}
-                  className="input-field"
-                  placeholder="Enter address"
-                />
-                {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address.message}</p>}
-              </div>
-
-              <div>
                 {label('NPI', true)}
                 <input
-                  {...register('npi', { required: 'NPI is required' })}
+                  {...register('npi', { required: 'NPI is required', pattern: { value: /^\d{10}$/, message: 'NPI must be 10 digits' } })}
                   className="input-field"
                   placeholder="Enter NPI"
                 />
                 {errors.npi && <p className="text-xs text-red-600 mt-1">{errors.npi.message}</p>}
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={closeModal} className="flex-1 btn-ghost">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="flex-1 btn-primary">
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
+              <AddressInput fieldNamePrefix="address" register={register} errors={errors} watch={watch} />
+
+              <div className="md:col-span-2 xl:col-span-3 flex items-center gap-3 pt-2">
+                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingPractice ? 'Update Practice' : 'Create Practice'}</button>
+                <button type="button" onClick={closeModal} className="btn-ghost">Cancel</button>
               </div>
           </form>
         </AppModal>

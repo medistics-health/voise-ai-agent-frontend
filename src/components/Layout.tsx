@@ -15,6 +15,8 @@ import {
   Shield,
   CreditCard,
   Briefcase,
+  Stethoscope,
+  MapPin,
 } from "lucide-react";
 
 export default function Layout() {
@@ -107,9 +109,11 @@ export default function Layout() {
           )}
           {[
             { to: "/providers", icon: Building2, label: "Providers" },
+            { to: "/doctors", icon: Stethoscope, label: "Doctors" },
             { to: "/insurances", icon: Shield, label: "Insurances" },
             { to: "/payers", icon: CreditCard, label: "Payers" },
-            { to: "/practices", icon: Briefcase, label: "Practices" },
+            { to: "/practices", icon: Briefcase, label: "Practices Group" },
+            { to: "/practice-locations", icon: MapPin, label: "Practice Locations" },
           ].map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}

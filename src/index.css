@@ -56,7 +56,7 @@
   }
 
   .page-title {
-    @apply text-3xl font-bold text-ink-950;
+    @apply text-2xl font-bold text-ink-950;
   }
 
   .page-subtitle {

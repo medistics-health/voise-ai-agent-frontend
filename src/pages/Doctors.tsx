@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
-import { Building2, Search, Pencil, Trash2, PlusCircle } from 'lucide-react'
+import { Stethoscope, Search, Pencil, Trash2, PlusCircle } from 'lucide-react'
 import AppModal from '../components/AppModal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import PageHeader from '../components/PageHeader'
@@ -10,28 +10,30 @@ import TablePagination from '../components/TablePagination'
 import AddressInput from '../components/AddressInput'
 import { formatFullAddress } from '../lib/address'
 
-interface Provider {
+interface Doctor {
   id: string
   name: string
   npi: string
+  phone?: string
+  fax?: string
   addressLine1: string
   addressLine2?: string
   city: string
   state: string
   zip: string
-  ein: string
   createdAt: string
 }
 
-interface ProviderFormValues {
+interface DoctorFormValues {
   name: string
   npi: string
+  phone?: string
+  fax?: string
   addressLine1: string
   addressLine2?: string
   city: string
   state: string
   zip: string
-  ein: string
 }
 
 interface Pagination {
@@ -41,15 +43,16 @@ interface Pagination {
   totalPages: number
 }
 
-const defaultValues: ProviderFormValues = {
+const defaultValues: DoctorFormValues = {
   name: '',
   npi: '',
+  phone: '',
+  fax: '',
   addressLine1: '',
   addressLine2: '',
   city: '',
   state: '',
   zip: '',
-  ein: '',
 }
 
 const label = (text: string, required = false) => (
@@ -58,36 +61,36 @@ const label = (text: string, required = false) => (
   </label>
 )
 
-export default function Providers() {
-  const [providers, setProviders] = useState<Provider[]>([])
+export default function Doctors() {
+  const [doctors, setDoctors] = useState<Doctor[]>([])
   const [pagination, setPagination] = useState<Pagination>({ total: 0, page: 1, limit: 10, totalPages: 0 })
   const [search, setSearch] = useState('')
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
-  const [providerToDelete, setProviderToDelete] = useState<Provider | null>(null)
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null)
+  const [doctorToDelete, setDoctorToDelete] = useState<Doctor | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<ProviderFormValues>({ defaultValues })
+  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<DoctorFormValues>({ defaultValues })
 
-  const fetchProviders = useCallback(async (page: number, searchTerm: string) => {
+  const fetchDoctors = useCallback(async (page: number, searchTerm: string) => {
     setLoading(true)
     try {
-      const res = await api.get('/providers', { params: { page, limit: 10, search: searchTerm } })
-      setProviders(res.data.data.providers ?? [])
+      const res = await api.get('/doctors', { params: { page, limit: 10, search: searchTerm } })
+      setDoctors(res.data.data.doctors ?? [])
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Failed to load providers')
+      toast.error('Failed to load doctors')
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchProviders(1, search)
-  }, [search, fetchProviders])
+    fetchDoctors(1, search)
+  }, [search, fetchDoctors])
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(inputValue), 350)
@@ -95,61 +98,62 @@ export default function Providers() {
   }, [inputValue])
 
   const openCreateModal = () => {
-    setEditingProvider(null)
+    setEditingDoctor(null)
     reset(defaultValues)
     setIsModalOpen(true)
   }
 
-  const openEditModal = (provider: Provider) => {
-    setEditingProvider(provider)
+  const openEditModal = (doctor: Doctor) => {
+    setEditingDoctor(doctor)
     reset({
-      name: provider.name || '',
-      npi: provider.npi || '',
-      addressLine1: provider.addressLine1 || '',
-      addressLine2: provider.addressLine2 || '',
-      city: provider.city || '',
-      state: provider.state || '',
-      zip: provider.zip || '',
-      ein: provider.ein || '',
+      name: doctor.name || '',
+      npi: doctor.npi || '',
+      phone: doctor.phone || '',
+      fax: doctor.fax || '',
+      addressLine1: doctor.addressLine1 || '',
+      addressLine2: doctor.addressLine2 || '',
+      city: doctor.city || '',
+      state: doctor.state || '',
+      zip: doctor.zip || '',
     })
     setIsModalOpen(true)
   }
 
   const closeModal = () => {
-    setEditingProvider(null)
+    setEditingDoctor(null)
     reset(defaultValues)
     setIsModalOpen(false)
   }
 
-  const onSubmit = async (values: ProviderFormValues) => {
+  const onSubmit = async (values: DoctorFormValues) => {
     setSaving(true)
     try {
-      if (editingProvider) {
-        await api.put(`/providers/${editingProvider.id}`, values)
-        toast.success('Provider updated')
+      if (editingDoctor) {
+        await api.put(`/doctors/${editingDoctor.id}`, values)
+        toast.success('Doctor updated')
       } else {
-        await api.post('/providers', values)
-        toast.success('Provider created')
+        await api.post('/doctors', values)
+        toast.success('Doctor created')
       }
       closeModal()
-      fetchProviders(1, search)
+      fetchDoctors(1, search)
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Unable to save provider')
+      toast.error(err?.response?.data?.message || 'Unable to save doctor')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!providerToDelete) return
+    if (!doctorToDelete) return
     setDeleting(true)
     try {
-      await api.delete(`/providers/${providerToDelete.id}`)
-      toast.success('Provider deleted')
-      setProviderToDelete(null)
-      fetchProviders(1, search)
+      await api.delete(`/doctors/${doctorToDelete.id}`)
+      toast.success('Doctor deleted')
+      setDoctorToDelete(null)
+      fetchDoctors(1, search)
     } catch {
-      toast.error('Unable to delete provider')
+      toast.error('Unable to delete doctor')
     } finally {
       setDeleting(false)
     }
@@ -157,18 +161,18 @@ export default function Providers() {
 
   const goToPage = (page: number) => {
     if (page < 1 || page > pagination.totalPages) return
-    fetchProviders(page, search)
+    fetchDoctors(page, search)
   }
 
   return (
     <div className="p-8 space-y-6">
       <PageHeader
-        title="Providers"
-        subtitle="Manage healthcare providers with NPI, EIN, and location details."
-        icon={Building2}
+        title="Doctors"
+        subtitle="Manage healthcare providers with NPI, contact information, and location details."
+        icon={Stethoscope}
         action={
           <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2 flex-shrink-0">
-          <PlusCircle size={14} /> Add Provider
+          <PlusCircle size={14} /> Add Doctor
           </button>
         }
       />
@@ -176,14 +180,14 @@ export default function Providers() {
       {/* Search Bar */}
       <div className="relative max-w-sm">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input type="text" placeholder="Search providers..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="input-field pl-9" />
+        <input type="text" placeholder="Search doctors..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="input-field pl-9" />
       </div>
 
       <div className="table-shell">
         {loading ? (
           <div className="p-16 flex justify-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
-        ) : providers.length === 0 ? (
-          <div className="p-16 text-center"><Building2 size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No providers found.</p></div>
+        ) : doctors.length === 0 ? (
+          <div className="p-16 text-center"><Stethoscope size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No doctors found.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -191,26 +195,26 @@ export default function Providers() {
                 <tr className="text-slate-500 text-xs uppercase tracking-[0.15em] border-b border-brand-100 bg-brand-50/80">
                   <th className="px-4 py-2.5 text-left">Name</th>
                   <th className="px-4 py-2.5 text-left">NPI</th>
+                  <th className="px-4 py-2.5 text-left">Phone</th>
                   <th className="px-4 py-2.5 text-left">Address</th>
+                  <th className="px-4 py-2.5 text-left">City</th>
                   <th className="px-4 py-2.5 text-left">State</th>
-                  <th className="px-4 py-2.5 text-left">Zip</th>
-                  <th className="px-4 py-2.5 text-left">EIN</th>
                   <th className="px-4 py-2.5 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-100">
-                {providers.map((provider) => (
-                  <tr key={provider.id} className="hover:bg-brand-50/40 transition-colors">
-                    <td className="px-4 py-2 text-ink-950 font-semibold text-xs">{provider.name}</td>
-                    <td className="px-4 py-2 text-slate-600 text-xs font-mono">{provider.npi}</td>
-                    <td className="px-4 py-2 text-slate-500 text-xs max-w-[320px] whitespace-normal">{formatFullAddress(provider) || ' - '}</td>
-                    <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{provider.state}</td>
-                    <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{provider.zip}</td>
-                    <td className="px-4 py-2 text-slate-600 text-xs font-mono">{provider.ein}</td>
+                {doctors.map((doctor) => (
+                  <tr key={doctor.id} className="hover:bg-brand-50/40 transition-colors">
+                    <td className="px-4 py-2 text-ink-950 font-semibold text-xs">{doctor.name}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs font-mono">{doctor.npi}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs">{doctor.phone || '-'}</td>
+                    <td className="px-4 py-2 text-slate-500 text-xs max-w-[320px] whitespace-normal">{formatFullAddress(doctor) || ' - '}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs">{doctor.city}</td>
+                    <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{doctor.state}</td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEditModal(provider)} className="btn-ghost px-3 py-2 text-xs inline-flex items-center gap-2"><Pencil size={13} />Edit</button>
-                        <button onClick={() => setProviderToDelete(provider)} className="px-3 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold inline-flex items-center gap-2"><Trash2 size={13} />Delete</button>
+                        <button onClick={() => openEditModal(doctor)} className="btn-ghost px-3 py-2 text-xs inline-flex items-center gap-2"><Pencil size={13} />Edit</button>
+                        <button onClick={() => setDoctorToDelete(doctor)} className="px-3 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold inline-flex items-center gap-2"><Trash2 size={13} />Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -223,7 +227,7 @@ export default function Providers() {
       </div>
 
       {isModalOpen && (
-        <AppModal title={editingProvider ? 'Edit Provider' : 'Add Provider'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
+        <AppModal title={editingDoctor ? 'Edit Doctor' : 'Add Doctor'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
           <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
               <div className="xl:col-span-2">
                 {label('Name', true)}
@@ -236,26 +240,31 @@ export default function Providers() {
                 {errors.npi && <p className="text-xs text-red-600 mt-1">{errors.npi.message}</p>}
               </div>
               <div>
-                {label('EIN', true)}
-                <input className="input-field" {...register('ein', { required: 'EIN is required', pattern: { value: /^\d{9}$/, message: 'EIN must be 9 digits' } })} />
-                {errors.ein && <p className="text-xs text-red-600 mt-1">{errors.ein.message}</p>}
+                {label('Phone')}
+                <input className="input-field" {...register('phone', { pattern: { value: /^[0-9()+\-\s]*$/, message: 'Enter a valid phone number' } })} />
+                {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone.message}</p>}
+              </div>
+              <div>
+                {label('Fax')}
+                <input className="input-field" {...register('fax', { pattern: { value: /^[0-9()+\-\s]*$/, message: 'Enter a valid fax number' } })} />
+                {errors.fax && <p className="text-xs text-red-600 mt-1">{errors.fax.message}</p>}
               </div>
               <AddressInput fieldNamePrefix="address" register={register} errors={errors} watch={watch} />
               <div className="md:col-span-2 xl:col-span-3 flex items-center gap-3 pt-2">
-                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Create Provider'}</button>
+                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingDoctor ? 'Update Doctor' : 'Create Doctor'}</button>
                 <button type="button" onClick={closeModal} className="btn-ghost">Cancel</button>
               </div>
           </form>
         </AppModal>
       )}
 
-      {providerToDelete && (
+      {doctorToDelete && (
         <ConfirmDialog
-          title="Delete Provider"
-          message={`Provider "${providerToDelete.name}" will be soft deleted.`}
-          confirmLabel="Delete Provider"
+          title="Delete Doctor"
+          message={`Doctor "${doctorToDelete.name}" will be soft deleted.`}
+          confirmLabel="Delete Doctor"
           onConfirm={handleDelete}
-          onClose={() => !deleting && setProviderToDelete(null)}
+          onClose={() => !deleting && setDoctorToDelete(null)}
           confirmDisabled={deleting}
         />
       )}
