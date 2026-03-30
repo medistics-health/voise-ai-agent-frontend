@@ -29,6 +29,8 @@ export default function FloatingCallWidget() {
     callSessionId,
     isWidgetOpen,
     isWidgetMinimized,
+    patientMetadata,
+    callSource,
     startCall,
     endCall,
     sendMessage,
@@ -113,11 +115,13 @@ export default function FloatingCallWidget() {
           </div>
           <div className="text-left">
             <p className="text-xs font-bold text-ink-950 leading-none">
-              {status === "connected"
-                ? "In Call"
-                : status === "ended"
-                  ? "Call Ended"
-                  : "Ready"}
+              {callSource === "patient_list" && patientMetadata
+                ? patientMetadata.name
+                : status === "connected"
+                  ? "In Call"
+                  : status === "ended"
+                    ? "Call Ended"
+                    : "Ready"}
             </p>
             <p className="text-[10px] text-slate-500 mt-0.5">
               {fmtDuration(callDuration)}
@@ -188,8 +192,16 @@ export default function FloatingCallWidget() {
           </div>
           <div>
             <p className="text-xs font-bold text-ink-950 leading-none">
-              AI Receptionist
+              {callSource === "patient_list" && patientMetadata
+                ? patientMetadata.name
+                : "AI Receptionist"}
             </p>
+            {callSource === "patient_list" && patientMetadata?.insuranceCompany && (
+              <p className="text-[10px] text-brand-600 font-medium leading-none mt-0.5">
+                {patientMetadata.insuranceCompany}
+                {patientMetadata.insurancePhone ? ` · ${patientMetadata.insurancePhone}` : ""}
+              </p>
+            )}
             <p className="text-[10px] text-slate-500 mt-0.5">
               {status === "connected"
                 ? `Connected · ${fmtDuration(callDuration)}`
@@ -349,7 +361,8 @@ export default function FloatingCallWidget() {
               </p>
             </div>
             <button
-              onClick={startCall}
+
+              onClick={() => startCall()}
               className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5
                          rounded-full text-sm font-bold flex items-center gap-2
                          transition-all hover:scale-105 shadow-lg shadow-green-600/25"

@@ -43,6 +43,18 @@ export interface ActiveCall {
   transcriptCount: number;
 }
 
+export interface PatientMetadata {
+  name: string;
+  dob?: string;
+  insuranceCompany?: string;
+  insurancePhone?: string;
+}
+
+export interface StartCallOptions {
+  source?: "voice_center" | "patient_list";
+  patientMeta?: PatientMetadata;
+}
+
 interface CallContextValue {
   activeCalls: ActiveCall[];
   sseConnected: boolean;
@@ -58,7 +70,9 @@ interface CallContextValue {
   callSessionId: string;
   isWidgetOpen: boolean;
   isWidgetMinimized: boolean;
-  startCall: () => Promise<void>;
+  patientMetadata: PatientMetadata | null;
+  callSource: "voice_center" | "patient_list" | null;
+  startCall: (options?: StartCallOptions) => Promise<void>;
   endCall: () => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   toggleMute: () => void;
@@ -99,6 +113,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
   /* ── Widget ── */
   const [isWidgetOpen, setIsWidgetOpen] = useState(false);
   const [isWidgetMinimized, setIsWidgetMinimized] = useState(false);
+
+  /* ── Call source & patient metadata ── */
+  const [patientMetadata, setPatientMetadata] = useState<PatientMetadata | null>(null);
+  const [callSource, setCallSource] = useState<"voice_center" | "patient_list" | null>(null);
 
   /* ── Refs ── */
   const roomNameRef = useRef("");
@@ -574,10 +592,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
   /* ═══════════════════════════════════════════
    Public Actions
    ═══════════════════════════════════════════ */
-  const startCall = async () => {
+  const startCall = async (options?: StartCallOptions) => {
+    const source = options?.source || "voice_center";
+    const patientMeta = options?.patientMeta || null;
+
     // ── Update BOTH state and ref immediately ──
     setStatus("connecting");
-    statusRef.current = "connecting"; // ← ADD THIS
+    statusRef.current = "connecting";
 
     setMessages([]);
     setCallInfo(null);
@@ -585,11 +606,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setMuted(false);
     setIsWidgetOpen(true);
     setIsWidgetMinimized(false);
+    setPatientMetadata(patientMeta);
+    setCallSource(source);
 
     const micOk = micSupported ? await startMic() : true;
     if (!micOk && micSupported) {
       setStatus("idle");
-      statusRef.current = "idle"; // ← ADD THIS
+      statusRef.current = "idle";
       return;
     }
 
@@ -597,7 +620,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`${AGENT_URL}/agent/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ source, patientMeta }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
@@ -609,7 +632,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       // ── CRITICAL: Update ref BEFORE calling playTTS ──
       setStatus("connected");
-      statusRef.current = "connected"; // ← ADD THIS
+      statusRef.current = "connected";
 
       setCallInfo({
         identityVerified: false,
@@ -623,19 +646,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
         1000,
       );
 
-      // ── Now playTTS will see statusRef.current === "connected" ──
-      const greeting =
-        "Thank you for calling. My name is Medistics AI, your AI assistant. How can I help you today?";
-      addMessage("ai", greeting);
-      await playTTS(greeting); // ← This now works! 🔊
-
-      if (micSupported) startRecognition();
-      toast.success("Call connected!");
+      if (source === "patient_list") {
+        // Patient-list calls: skip greeting, go directly to listening
+        const patientName = patientMeta?.name || "the patient";
+        addMessage("system", `Connected — ready for questions about ${patientName}`);
+        if (micSupported) startRecognition();
+        toast.success("Call connected!");
+      } else {
+        // Voice center calls: play full greeting
+        const greeting =
+          "Thank you for calling. My name is Medistics AI, your AI assistant. How can I help you today?";
+        addMessage("ai", greeting);
+        await playTTS(greeting);
+        if (micSupported) startRecognition();
+        toast.success("Call connected!");
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to start");
       cleanupCallResources();
       setStatus("idle");
-      statusRef.current = "idle"; // ← ADD THIS
+      statusRef.current = "idle";
     }
   };
 
@@ -695,10 +725,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setCallSessionId("");
     setCallDuration(0);
     setStatus("idle");
-    statusRef.current = "idle"; // ← ADD THIS
+    statusRef.current = "idle";
     setSpeakingState("idle");
     setInterimText("");
     setMuted(false);
+    setPatientMetadata(null);
+    setCallSource(null);
     roomNameRef.current = "";
   }, []);
 
@@ -734,6 +766,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
         callSessionId,
         isWidgetOpen,
         isWidgetMinimized,
+        patientMetadata,
+        callSource,
         startCall,
         endCall,
         sendMessage,

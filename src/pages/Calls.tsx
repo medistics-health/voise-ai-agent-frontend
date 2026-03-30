@@ -28,6 +28,11 @@ interface CallSession {
   duration: number | null;
   startedAt: string;
   endedAt: string | null;
+  metadata?: {
+    insuranceCompany?: string;
+    insurancePhone?: string;
+    patientName?: string;
+  } | null;
   patient?: {
     id: string;
     firstName: string;
@@ -294,13 +299,23 @@ export default function Calls() {
                       <td className="px-4 py-2.5">
                         <div>
                           <p className="text-ink-950 font-semibold text-xs">
-                            {call.callerName || call.callerNumber || "Unknown"}
+                            {call.metadata?.insuranceCompany ||
+                              call.callerName ||
+                              call.callerNumber ||
+                              "Unknown"}
                           </p>
-                          {call.callerName && call.callerNumber && (
+                          {call.metadata?.insurancePhone && (
                             <p className="text-xs text-slate-500">
-                              {call.callerNumber}
+                              {call.metadata.insurancePhone}
                             </p>
                           )}
+                          {!call.metadata?.insurancePhone &&
+                            call.callerName &&
+                            call.callerNumber && (
+                              <p className="text-xs text-slate-500">
+                                {call.callerNumber}
+                              </p>
+                            )}
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-xs text-slate-600">

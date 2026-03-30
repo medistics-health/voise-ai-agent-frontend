@@ -47,6 +47,11 @@ interface CallDetail {
   duration: number | null;
   startedAt: string;
   endedAt: string | null;
+  metadata?: {
+    insuranceCompany?: string;
+    insurancePhone?: string;
+    patientName?: string;
+  } | null;
   patient?: {
     id: string;
     firstName: string;
@@ -182,8 +187,16 @@ export default function CallDetail() {
           <div>
             <h1 className="text-lg font-bold text-ink-950 flex items-center gap-2">
               <Phone size={18} className="text-brand-600" />
-              {call.callerName || call.callerNumber || "Unknown Caller"}
+              {call.metadata?.insuranceCompany ||
+                call.callerName ||
+                call.callerNumber ||
+                "Unknown Caller"}
             </h1>
+            {call.metadata?.insurancePhone && (
+              <p className="text-xs text-slate-500 mt-0.5">
+                {call.metadata.insurancePhone}
+              </p>
+            )}
             <p className="text-xs text-slate-500 mt-1">
               Room: {call.roomName} • Started:{" "}
               {new Date(call.startedAt).toLocaleString()}
