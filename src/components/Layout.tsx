@@ -17,6 +17,10 @@ import {
   Briefcase,
   Stethoscope,
   MapPin,
+  Phone,
+  HelpCircle,
+  Calendar,
+  Headphones,
 } from "lucide-react";
 
 export default function Layout() {
@@ -42,7 +46,7 @@ export default function Layout() {
                     VoiceAI
                   </p>
                   <p className="text-xs text-brand-300 font-medium mt-0.5">
-                    Agent
+                    Receptionist
                   </p>
                 </div>
               )}
@@ -80,6 +84,10 @@ export default function Layout() {
             { to: "/upload", icon: Upload, label: "Upload CSV" },
             { to: "/results", icon: ClipboardList, label: "Results" },
             { to: "/coverage", icon: ShieldCheck, label: "Coverage" },
+            { to: "/test-call", icon: Headphones, label: "Voice Call Center" },
+            { to: "/calls", icon: Phone, label: "Call Log" },
+            { to: "/appointments", icon: Calendar, label: "Appointments" },
+            { to: "/faq", icon: HelpCircle, label: "FAQ Manager" },
           ].map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
@@ -113,7 +121,11 @@ export default function Layout() {
             { to: "/insurances", icon: Shield, label: "Insurances" },
             { to: "/payers", icon: CreditCard, label: "Payers" },
             { to: "/practices", icon: Briefcase, label: "Practices Group" },
-            { to: "/practice-locations", icon: MapPin, label: "Practice Locations" },
+            {
+              to: "/practice-locations",
+              icon: MapPin,
+              label: "Practice Locations",
+            },
           ].map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}

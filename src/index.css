@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,15 +8,23 @@
     box-sizing: border-box;
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     height: 100%;
   }
 
   body {
     margin: 0;
-    font-family: 'Google Sans', 'Google Sans Text', 'Product Sans', 'Public Sans', system-ui, sans-serif;
+    font-family:
+      "Google Sans", "Google Sans Text", "Product Sans", "Public Sans",
+      system-ui, sans-serif;
     background:
-      radial-gradient(circle at top left, rgba(145, 178, 255, 0.3), transparent 28%),
+      radial-gradient(
+        circle at top left,
+        rgba(145, 178, 255, 0.3),
+        transparent 28%
+      ),
       linear-gradient(180deg, #f8fbff 0%, #edf3ff 100%);
     color: #021236;
     -webkit-font-smoothing: antialiased;
@@ -77,5 +85,15 @@
 
   .modal-card {
     @apply w-full max-w-4xl rounded-2xl border border-brand-100 bg-white shadow-soft;
+  }
+  /* Add at the bottom of your CSS file */
+  @keyframes ai-bar {
+    0%,
+    100% {
+      height: 4px;
+    }
+    50% {
+      height: var(--bar-h, 30px);
+    }
   }
 }

@@ -12,7 +12,7 @@ export default function AuthHeader({ subtitle }: Props) {
       </div>
 
       <h1 className="text-4xl font-bold text-ink-950 tracking-tight">
-        VoiceAI Agent
+        VoiceAI Receptionist
       </h1>
 
       <p className="text-lg text-slate-600 font-medium mt-1">{subtitle}</p>
