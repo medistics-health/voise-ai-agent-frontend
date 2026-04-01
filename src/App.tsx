@@ -8,7 +8,6 @@ import Patients from "./pages/Patients";
 import Providers from "./pages/Providers";
 import Insurance from "./pages/Insurance";
 import Payer from "./pages/Payer";
-import Practice from "./pages/Practice";
 import Doctors from "./pages/Doctors";
 import PracticeLocations from "./pages/PracticeLocations";
 import Upload from "./pages/Upload";
@@ -23,6 +22,10 @@ import TestCall from "./pages/TestCall";
 import Appointments from "./pages/Appointments";
 import { CallProvider } from "./contexts/CallContext";
 import FloatingCallWidget from "./components/FloatingCallWidget";
+
+// ── NEW Phase 3 pages ──
+import SettingsPage from "./pages/Settings";
+import CallQueue from "./pages/CallQueue";
 export default function App() {
   return (
     <BrowserRouter>
@@ -45,7 +48,6 @@ export default function App() {
               />
               <Route path="/insurances" element={<Insurance />} />
               <Route path="/payers" element={<Payer />} />
-              <Route path="/practices" element={<Practice />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/results" element={<Results />} />
               <Route path="/results/:jobId" element={<Results />} />
@@ -56,6 +58,9 @@ export default function App() {
               <Route path="/calls/:id" element={<CallDetail />} />
               <Route path="/faq" element={<FAQManagement />} />
               <Route path="/appointments" element={<Appointments />} />
+              {/* ── NEW Phase 3 routes ── */}
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/call-queue" element={<CallQueue />} />
             </Route>
           </Route>
 

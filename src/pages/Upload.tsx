@@ -58,9 +58,9 @@ export default function Upload() {
 
   const handleDownloadSample = () => {
     const header =
-      "Patient First Name,Patient Last Name,Patient Middle Name,Patient DOB,Patient Gender,Patient email,patient Mobile Number,Patient Address Line 1,Patient Address Line 2,Patient City,Patient State,Patient Zip,Provider NPI,Plan Name,Member ID\n";
+      "Patient First Name,Patient Last Name,Patient Middle Name,Patient DOB,Patient Gender,Patient email,patient Mobile Number,Patient Address Line 1,Patient Address Line 2,Patient City,Patient State,Patient Zip,Insurance Name,Member ID,Practice Location Name,Group Name,Providers\n";
     const row =
-      "John,Doe,William,1985-04-12,Male,john@example.com,555-0100,123 Main St,Apt 4B,Dallas,TX,75001,1649940099,UnitedHealthcare Choice Plus,MEM123456\n";
+      "John,Doe,William,2001-12-01,Male,john@example.com,555-0100,123 Main St,Apt 4B,Dallas,TX,75001,Aetna,MEM123456,Garden State Medical Group- North Bergen,Virtual Care LLC,ANIL S PATEL MD\n";
     const blob = new Blob([header + row], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -76,17 +76,19 @@ export default function Upload() {
     <div className="p-8 space-y-6">
       <PageHeader
         title="Upload CSV"
-        subtitle="Upload a CSV file to batch-check eligibility via UnitedHealthcare."
+        subtitle="Upload a CSV file to import patients, map linked records, and only call UHC when coverage data is missing."
         icon={FileText}
       />
       {/* Header */}
       <div>
         <p className="text-sm text-slate-500 mt-2">
-          <strong>Provider NPI:</strong> Optionally include a Provider NPI from
-          your Providers table—if provided, it will be used instead of the
-          default configuration. <strong>Coverage:</strong> If both `Plan Name`
-          and `Member ID` are present, that row is added directly without
-          calling the API.
+          <strong>Imported Coverage:</strong> If `Insurance Name` or `Member ID`
+          is present, that row skips the UHC API. If both are present, the
+          patient is marked `Active`; if only one is present, the patient is
+          marked `Unknown`. <strong>Record Mapping:</strong> `Insurance Name`,
+          `Practice Location Name`, `Group Name`, and `Providers` are matched
+          to existing records. <strong>Auto-Queue:</strong> Only patients with
+          no coverage status move into the call queue.
         </p>
       </div>
 
@@ -197,9 +199,8 @@ export default function Upload() {
           </div>
           <p className="text-sm text-slate-500 mt-1">
             Download our sample CSV file to ensure your data includes patient
-            address columns, optional `Provider NPI` (from your Providers
-            table), and optional `Plan Name` and `Member ID` columns before
-            uploading.
+            address columns plus `Insurance Name`, `Member ID`,
+            `Practice Location Name`, `Group Name`, and `Providers`.
           </p>
         </div>
         <button

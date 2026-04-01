@@ -14,13 +14,14 @@ import {
   PanelLeftOpen,
   Shield,
   CreditCard,
-  Briefcase,
   Stethoscope,
   MapPin,
   Phone,
   HelpCircle,
   Calendar,
   Headphones,
+  ListOrdered,
+  Settings,
 } from "lucide-react";
 
 export default function Layout() {
@@ -35,7 +36,6 @@ export default function Layout() {
         {/* Header with Logo and Toggle */}
         <div className="px-4 py-5 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center justify-between gap-3">
-            {/* Logo Section */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex-shrink-0 flex items-center justify-center shadow-lg">
                 <Activity size={20} className="text-white" />
@@ -51,8 +51,6 @@ export default function Layout() {
                 </div>
               )}
             </div>
-
-            {/* Toggle Button */}
             <button
               type="button"
               onClick={() => setCollapsed((value) => !value)}
@@ -69,11 +67,11 @@ export default function Layout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {/* Operations Section */}
           {!collapsed && (
-            <div className="px-2 py-3 mt-4 mb-2">
-              <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider">
+            <div className="px-2 pt-2 pb-1">
+              <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">
                 Operations
               </p>
             </div>
@@ -82,6 +80,7 @@ export default function Layout() {
             { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true },
             { to: "/patients", icon: Users, label: "Patients" },
             { to: "/upload", icon: Upload, label: "Upload CSV" },
+            { to: "/call-queue", icon: ListOrdered, label: "Queue Management" },
             { to: "/results", icon: ClipboardList, label: "Results" },
             { to: "/coverage", icon: ShieldCheck, label: "Coverage" },
             { to: "/test-call", icon: Headphones, label: "Voice Call Center" },
@@ -109,23 +108,18 @@ export default function Layout() {
 
           {/* Master Data Section */}
           {!collapsed && (
-            <div className="px-2 py-2 mb-2">
-              <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider">
+            <div className="px-2 pt-4 pb-1">
+              <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">
                 Master Data
               </p>
             </div>
           )}
           {[
-            { to: "/providers", icon: Building2, label: "Providers" },
-            { to: "/doctors", icon: Stethoscope, label: "Doctors" },
+            { to: "/providers", icon: Building2, label: "Practice Groups" },
+            { to: "/doctors", icon: Stethoscope, label: "Providers" },
             { to: "/insurances", icon: Shield, label: "Insurances" },
             { to: "/payers", icon: CreditCard, label: "Payers" },
-            { to: "/practices", icon: Briefcase, label: "Practices Group" },
-            {
-              to: "/practice-locations",
-              icon: MapPin,
-              label: "Practice Locations",
-            },
+            { to: "/practice-locations", icon: MapPin, label: "Locations" },
           ].map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
@@ -146,7 +140,23 @@ export default function Layout() {
         </nav>
 
         {/* User Section */}
-        <div className="px-3 py-4 border-t border-white/10 bg-white/5 flex-shrink-0 space-y-3">
+        <div className="px-3 py-4 border-t border-white/10 bg-white/5 flex-shrink-0 space-y-2">
+          {/* Settings Link */}
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              `w-full flex items-center ${collapsed ? "justify-center" : "gap-2"} px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 border ${
+                isActive
+                  ? "bg-brand-500 text-white border-brand-400"
+                  : "text-brand-100 hover:text-white hover:bg-white/10 border-white/10"
+              }`
+            }
+            title={collapsed ? "Settings" : undefined}
+          >
+            <Settings size={16} className="flex-shrink-0" />
+            {!collapsed && "Settings"}
+          </NavLink>
+
           {/* User Profile */}
           <div
             className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} p-2.5 rounded-lg bg-white/5 border border-white/10`}

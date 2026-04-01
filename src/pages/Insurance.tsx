@@ -19,6 +19,10 @@ interface Insurance {
   city: string
   state: string
   zip: string
+  workingHoursStart?: string
+  workingHoursEnd?: string
+  workingDays?: string
+  timezone?: string
   createdAt: string
 }
 
@@ -30,6 +34,10 @@ interface InsuranceFormValues {
   city: string
   state: string
   zip: string
+  workingHoursStart?: string
+  workingHoursEnd?: string
+  workingDays?: string
+  timezone?: string
 }
 
 interface Pagination {
@@ -47,6 +55,10 @@ const defaultValues: InsuranceFormValues = {
   city: '',
   state: '',
   zip: '',
+  workingHoursStart: '',
+  workingHoursEnd: '',
+  workingDays: 'Mon-Fri',
+  timezone: 'America/New_York',
 }
 
 const label = (text: string, required = false) => (
@@ -107,6 +119,10 @@ export default function Insurance() {
       city: insurance.city || '',
       state: insurance.state || '',
       zip: insurance.zip || '',
+      workingHoursStart: insurance.workingHoursStart || '',
+      workingHoursEnd: insurance.workingHoursEnd || '',
+      workingDays: insurance.workingDays || 'Mon-Fri',
+      timezone: insurance.timezone || 'America/New_York',
     })
     setIsModalOpen(true)
   }
@@ -190,6 +206,7 @@ export default function Insurance() {
                   <th className="px-4 py-2.5 text-left">City</th>
                   <th className="px-4 py-2.5 text-left">State</th>
                   <th className="px-4 py-2.5 text-left">Phone</th>
+                  <th className="px-4 py-2.5 text-left">Hours</th>
                   <th className="px-4 py-2.5 text-left">Actions</th>
                 </tr>
               </thead>
@@ -201,6 +218,11 @@ export default function Insurance() {
                     <td className="px-4 py-2 text-slate-600 text-xs">{insurance.city}</td>
                     <td className="px-4 py-2 text-slate-600 text-xs font-semibold">{insurance.state}</td>
                     <td className="px-4 py-2 text-slate-600 text-xs font-mono">{insurance.phone}</td>
+                    <td className="px-4 py-2 text-slate-500 text-xs whitespace-nowrap">
+                      {insurance.workingHoursStart && insurance.workingHoursEnd
+                        ? `${insurance.workingHoursStart} - ${insurance.workingHoursEnd} ${insurance.timezone?.split('/')[1]?.replace('_', ' ') || ''}`
+                        : 'Anytime'}
+                    </td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <button onClick={() => openEditModal(insurance)} className="btn-ghost px-3 py-2 text-xs inline-flex items-center gap-2"><Pencil size={13} />Edit</button>
@@ -242,6 +264,37 @@ export default function Insurance() {
               </div>
 
               <AddressInput fieldNamePrefix="address" register={register} errors={errors} watch={watch} />
+
+              <div className="md:col-span-2 xl:col-span-3 border-t border-brand-100 pt-4 mt-2">
+                <h4 className="text-sm font-semibold text-ink-900 mb-4">Calling Hours (Optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    {label('Start Time')}
+                    <input type="time" {...register('workingHoursStart')} className="input-field" />
+                  </div>
+                  <div>
+                    {label('End Time')}
+                    <input type="time" {...register('workingHoursEnd')} className="input-field" />
+                  </div>
+                  <div>
+                    {label('Working Days')}
+                    <select {...register('workingDays')} className="input-field">
+                      <option value="Mon-Fri">Monday - Friday</option>
+                      <option value="Mon-Sat">Monday - Saturday</option>
+                      <option value="Mon-Sun">Everyday</option>
+                    </select>
+                  </div>
+                  <div>
+                    {label('Timezone')}
+                    <select {...register('timezone')} className="input-field">
+                      <option value="America/New_York">Eastern Time</option>
+                      <option value="America/Chicago">Central Time</option>
+                      <option value="America/Denver">Mountain Time</option>
+                      <option value="America/Los_Angeles">Pacific Time</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
 
               <div className="md:col-span-2 xl:col-span-3 flex items-center gap-3 pt-2">
                 <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingInsurance ? 'Update Insurance' : 'Create Insurance'}</button>

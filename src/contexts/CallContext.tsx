@@ -45,9 +45,11 @@ export interface ActiveCall {
 
 export interface PatientMetadata {
   name: string;
+  patientId?: string;
   dob?: string;
   insuranceCompany?: string;
   insurancePhone?: string;
+  providerNpi?: string;
 }
 
 export interface StartCallOptions {
@@ -635,8 +637,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       statusRef.current = "connected";
 
       setCallInfo({
-        identityVerified: false,
-        patientName: null,
+        identityVerified: source === "patient_list",
+        patientName: source === "patient_list" ? patientMeta?.name || null : null,
         intent: null,
         state: data.state,
       });

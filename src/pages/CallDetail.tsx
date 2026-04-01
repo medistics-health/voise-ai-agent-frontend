@@ -13,6 +13,7 @@ import {
   FileText,
   RefreshCcw,
   Pencil,
+  Save,
 } from "lucide-react";
 
 interface TranscriptEntry {
@@ -58,6 +59,9 @@ interface CallDetail {
     lastName: string;
     dob: string;
     mobileNumber: string | null;
+    payerMemberId?: string | null;
+    memberPlanStatus?: string | null;
+    memberPlanStatusUpdatedAt?: string | null;
   } | null;
   transcripts: TranscriptEntry[];
   note: SOAPNote | null;
@@ -91,6 +95,8 @@ export default function CallDetail() {
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
+  const [savingPatientStatus, setSavingPatientStatus] = useState(false);
+  const [patientStatus, setPatientStatus] = useState("");
   const [noteForm, setNoteForm] = useState({
     subjective: "",
     objective: "",
@@ -109,6 +115,7 @@ export default function CallDetail() {
       const res = await api.get(`/calls/${id}`);
       const data = res.data.data;
       setCall(data);
+      setPatientStatus(data.patient?.memberPlanStatus || "");
       if (data.note) {
         setNoteForm({
           subjective: data.note.subjective,
@@ -152,6 +159,25 @@ export default function CallDetail() {
       fetchCall();
     } catch {
       toast.error("Failed to regenerate note");
+    }
+  };
+
+  const updatePatientStatus = async () => {
+    if (!call?.patient?.id || !patientStatus) {
+      toast.error("Select a patient status first");
+      return;
+    }
+    setSavingPatientStatus(true);
+    try {
+      await api.patch(`/patients/${call.patient.id}/insurance-status`, {
+        memberPlanStatus: patientStatus,
+      });
+      toast.success("Patient status updated");
+      fetchCall();
+    } catch {
+      toast.error("Failed to update patient status");
+    } finally {
+      setSavingPatientStatus(false);
     }
   };
 
@@ -272,6 +298,49 @@ export default function CallDetail() {
             </div>
           </div>
         </div>
+
+        {call.patient && (
+          <div className="mt-6 rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[220px]">
+                <p className="text-xs text-slate-500">Patient coverage status</p>
+                <select
+                  className="input-field mt-2 h-10"
+                  value={patientStatus}
+                  onChange={(e) => setPatientStatus(e.target.value)}
+                >
+                  <option value="">Select status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Unknown">Unknown</option>
+                  <option value="Error">Error</option>
+                  <option value="No Answer">No Answer</option>
+                  <option value="Filed">Filed</option>
+                  <option value="Pending">Pending</option>
+                </select>
+              </div>
+              <button
+                onClick={updatePatientStatus}
+                disabled={savingPatientStatus}
+                className="btn-primary inline-flex items-center gap-2 text-xs"
+              >
+                <Save size={12} />
+                {savingPatientStatus ? "Saving..." : "Save Status"}
+              </button>
+              <div className="text-xs text-slate-500">
+                <p>
+                  Member ID: {call.patient.payerMemberId || "N/A"}
+                </p>
+                <p>
+                  Updated:{" "}
+                  {call.patient.memberPlanStatusUpdatedAt
+                    ? new Date(call.patient.memberPlanStatusUpdatedAt).toLocaleString()
+                    : "Not updated yet"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

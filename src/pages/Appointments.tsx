@@ -4,7 +4,6 @@ import toast from "react-hot-toast";
 import api from "../lib/api";
 import {
   Calendar,
-  Search,
   PlusCircle,
   Pencil,
   Trash2,

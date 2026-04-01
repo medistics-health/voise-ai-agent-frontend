@@ -159,8 +159,8 @@ export default function PracticeLocations() {
   return (
     <div className="p-8 space-y-6">
       <PageHeader
-        title="Practice Locations"
-        subtitle="Manage your practice locations with NPI and address information."
+        title="Locations"
+        subtitle="Manage practice locations (sites of service) with NPI and address details."
         icon={MapPin}
         action={
           <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2 flex-shrink-0">
@@ -179,7 +179,7 @@ export default function PracticeLocations() {
         {loading ? (
           <div className="p-16 flex justify-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
         ) : locations.length === 0 ? (
-          <div className="p-16 text-center"><MapPin size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No practice locations found.</p></div>
+          <div className="p-16 text-center"><MapPin size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No locations found.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">

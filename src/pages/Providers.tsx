@@ -163,12 +163,12 @@ export default function Providers() {
   return (
     <div className="p-8 space-y-6">
       <PageHeader
-        title="Providers"
-        subtitle="Manage healthcare providers with NPI, EIN, and location details."
+        title="Practice Groups"
+        subtitle="Manage practice groups with Group NPI, EIN, and location details."
         icon={Building2}
         action={
           <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2 flex-shrink-0">
-          <PlusCircle size={14} /> Add Provider
+          <PlusCircle size={14} /> Add Practice Group
           </button>
         }
       />
@@ -176,14 +176,14 @@ export default function Providers() {
       {/* Search Bar */}
       <div className="relative max-w-sm">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input type="text" placeholder="Search providers..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="input-field pl-9" />
+        <input type="text" placeholder="Search practice groups..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="input-field pl-9" />
       </div>
 
       <div className="table-shell">
         {loading ? (
           <div className="p-16 flex justify-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
         ) : providers.length === 0 ? (
-          <div className="p-16 text-center"><Building2 size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No providers found.</p></div>
+          <div className="p-16 text-center"><Building2 size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No practice groups found.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -223,7 +223,7 @@ export default function Providers() {
       </div>
 
       {isModalOpen && (
-        <AppModal title={editingProvider ? 'Edit Provider' : 'Add Provider'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
+        <AppModal title={editingProvider ? 'Edit Practice Group' : 'Add Practice Group'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
           <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
               <div className="xl:col-span-2">
                 {label('Name', true)}
@@ -242,7 +242,7 @@ export default function Providers() {
               </div>
               <AddressInput fieldNamePrefix="address" register={register} errors={errors} watch={watch} />
               <div className="md:col-span-2 xl:col-span-3 flex items-center gap-3 pt-2">
-                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Create Provider'}</button>
+                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingProvider ? 'Update Practice Group' : 'Create Practice Group'}</button>
                 <button type="button" onClick={closeModal} className="btn-ghost">Cancel</button>
               </div>
           </form>
@@ -251,9 +251,9 @@ export default function Providers() {
 
       {providerToDelete && (
         <ConfirmDialog
-          title="Delete Provider"
-          message={`Provider "${providerToDelete.name}" will be soft deleted.`}
-          confirmLabel="Delete Provider"
+          title="Delete Practice Group"
+          message={`Practice Group "${providerToDelete.name}" will be soft deleted.`}
+          confirmLabel="Delete Practice Group"
           onConfirm={handleDelete}
           onClose={() => !deleting && setProviderToDelete(null)}
           confirmDisabled={deleting}

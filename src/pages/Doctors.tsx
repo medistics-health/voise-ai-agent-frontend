@@ -167,12 +167,12 @@ export default function Doctors() {
   return (
     <div className="p-8 space-y-6">
       <PageHeader
-        title="Doctors"
-        subtitle="Manage healthcare providers with NPI, contact information, and location details."
+        title="Providers"
+        subtitle="Manage individual healthcare providers with NPI, contact information, and location details."
         icon={Stethoscope}
         action={
           <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2 flex-shrink-0">
-          <PlusCircle size={14} /> Add Doctor
+          <PlusCircle size={14} /> Add Provider
           </button>
         }
       />
@@ -180,14 +180,14 @@ export default function Doctors() {
       {/* Search Bar */}
       <div className="relative max-w-sm">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input type="text" placeholder="Search doctors..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="input-field pl-9" />
+        <input type="text" placeholder="Search providers..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="input-field pl-9" />
       </div>
 
       <div className="table-shell">
         {loading ? (
           <div className="p-16 flex justify-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
         ) : doctors.length === 0 ? (
-          <div className="p-16 text-center"><Stethoscope size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No doctors found.</p></div>
+          <div className="p-16 text-center"><Stethoscope size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No providers found.</p></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -227,7 +227,7 @@ export default function Doctors() {
       </div>
 
       {isModalOpen && (
-        <AppModal title={editingDoctor ? 'Edit Doctor' : 'Add Doctor'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
+        <AppModal title={editingDoctor ? 'Edit Provider' : 'Add Provider'} subtitle="Required fields are marked with an asterisk." onClose={closeModal}>
           <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
               <div className="xl:col-span-2">
                 {label('Name', true)}
@@ -251,7 +251,7 @@ export default function Doctors() {
               </div>
               <AddressInput fieldNamePrefix="address" register={register} errors={errors} watch={watch} />
               <div className="md:col-span-2 xl:col-span-3 flex items-center gap-3 pt-2">
-                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingDoctor ? 'Update Doctor' : 'Create Doctor'}</button>
+                <button type="submit" disabled={saving} className="btn-primary inline-flex items-center gap-2"><PlusCircle size={14} />{saving ? 'Saving...' : editingDoctor ? 'Update Provider' : 'Create Provider'}</button>
                 <button type="button" onClick={closeModal} className="btn-ghost">Cancel</button>
               </div>
           </form>
@@ -260,9 +260,9 @@ export default function Doctors() {
 
       {doctorToDelete && (
         <ConfirmDialog
-          title="Delete Doctor"
-          message={`Doctor "${doctorToDelete.name}" will be soft deleted.`}
-          confirmLabel="Delete Doctor"
+          title="Delete Provider"
+          message={`Provider "${doctorToDelete.name}" will be soft deleted.`}
+          confirmLabel="Delete Provider"
           onConfirm={handleDelete}
           onClose={() => !deleting && setDoctorToDelete(null)}
           confirmDisabled={deleting}

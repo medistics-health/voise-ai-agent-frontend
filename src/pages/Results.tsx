@@ -315,7 +315,6 @@ function JobDetail({ jobId }: { jobId: string }) {
                 <thead>
                   <tr className="text-slate-500 text-xs uppercase tracking-[0.15em] border-b border-brand-100 bg-brand-50/40">
                     <th className="px-4 py-2.5 text-left cursor-pointer" onClick={() => handleSort('name')}><span className="inline-flex items-center gap-1">Patient <SortIcon k="name" /></span></th>
-                    <th className="px-4 py-2.5 text-left">Patient ID</th>
                     <th className="px-4 py-2.5 text-left">DOB</th>
                     <th className="px-4 py-2.5 text-left">Gender</th>
                     <th className="px-4 py-2.5 text-left cursor-pointer" onClick={() => handleSort('status')}><span className="inline-flex items-center gap-1">Status <SortIcon k="status" /></span></th>
@@ -334,7 +333,6 @@ function JobDetail({ jobId }: { jobId: string }) {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-2 text-slate-600 text-xs font-mono whitespace-nowrap">{check.patientId}</td>
                       <td className="px-4 py-2 text-slate-600 text-xs font-semibold whitespace-nowrap">{check.patient?.dob ?? ' - '}</td>
                       <td className="px-4 py-2 text-slate-600 text-xs font-semibold whitespace-nowrap">{check.patient?.gender ?? ' - '}</td>
                       <td className="px-4 py-2"><StatusBadge status={check.status} /></td>
