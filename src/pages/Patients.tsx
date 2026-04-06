@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import {
+  CheckSquare,
   CalendarRange,
   Pencil,
   Phone,
@@ -33,19 +34,19 @@ interface Patient {
   state?: string;
   zip?: string;
   payerName: string;
+  payerMemberId?: string;
+  chartNumber?: string | null;
+  pref?: "Group" | "Provider" | null;
   providerId?: string | null;
   practiceLocationId?: string | null;
-  practiceGroupId?: string | null;
+  groupId?: string | null;
   insuranceId?: string | null;
-  payerId?: string | null;
-  payerMemberId?: string;
   memberPlanStatus?: string | null;
   memberPlanStatusUpdatedAt?: string | null;
   provider?: { id: string; name: string; npi: string } | null;
   practiceLocation?: { id: string; name: string; npi: string } | null;
-  practiceGroup?: { id: string; name: string; npi: string } | null;
+  group?: { id: string; name: string; category: string } | null;
   insurance?: { id: string; name: string; phone?: string | null } | null;
-  payer?: { id: string; name: string; claimMdId: string } | null;
 }
 interface PatientFormValues {
   firstName: string;
@@ -60,12 +61,14 @@ interface PatientFormValues {
   city: string;
   state: string;
   zip: string;
+  payerName: string;
+  payerMemberId: string;
+  chartNumber: string;
+  pref: "Group" | "Provider" | "";
   providerId: string | null;
   practiceLocationId: string | null;
-  practiceGroupId: string | null;
+  groupId: string | null;
   insuranceId: string | null;
-  payerId: string | null;
-  payerMemberId: string;
   memberPlanStatus: string;
 }
 interface Provider {
@@ -78,14 +81,14 @@ interface PracticeLocation {
   name: string;
   npi: string;
 }
+interface Group {
+  id: string;
+  name: string;
+  category: string;
+}
 interface Insurance {
   id: string;
   name: string;
-}
-interface Payer {
-  id: string;
-  name: string;
-  claimMdId: string;
 }
 interface Pagination {
   total: number;
@@ -94,15 +97,17 @@ interface Pagination {
   totalPages: number;
 }
 interface Filters {
-  practiceLocationId: string;
-  practiceGroupId: string;
-  memberPlanStatus: string;
-  statusDateFrom: string;
-  statusDateTo: string;
+  practiceLocationId?: string;
+  groupId?: string;
+  providerId?: string;
+  insuranceId?: string;
+  memberPlanStatus?: string;
+  statusDateFrom?: string;
+  statusDateTo?: string;
 }
 interface QueueForm {
-  patientId: string;
-  patientName: string;
+  patientIds: string[];
+  patientLabel: string;
   name: string;
   description: string;
   scheduledAt: string;
@@ -121,17 +126,21 @@ const defaultValues: PatientFormValues = {
   city: "",
   state: "",
   zip: "",
+  payerName: "",
+  payerMemberId: "",
+  chartNumber: "",
+  pref: "",
   providerId: null,
   practiceLocationId: null,
-  practiceGroupId: null,
+  groupId: null,
   insuranceId: null,
-  payerId: null,
-  payerMemberId: "",
   memberPlanStatus: "",
 };
 const defaultFilters: Filters = {
   practiceLocationId: "",
-  practiceGroupId: "",
+  groupId: "",
+  providerId: "",
+  insuranceId: "",
   memberPlanStatus: "",
   statusDateFrom: "",
   statusDateTo: "",
@@ -199,6 +208,28 @@ const addressText = (patient: Patient) =>
     .filter(Boolean)
     .join(" ");
 
+const buildPatientLookupData = (patient: Patient) => ({
+  id: patient.id,
+  firstName: patient.firstName,
+  lastName: patient.lastName,
+  middleName: patient.middleName || null,
+  dob: patient.dob,
+  gender: patient.gender || null,
+  email: patient.email || null,
+  mobileNumber: patient.mobileNumber || null,
+  addressLine1: patient.addressLine1 || null,
+  addressLine2: patient.addressLine2 || null,
+  city: patient.city || null,
+  state: patient.state || null,
+  zip: patient.zip || null,
+  payerMemberId: patient.payerMemberId || null,
+  memberPlanStatus: patient.memberPlanStatus || null,
+  memberPlanStatusUpdatedAt: patient.memberPlanStatusUpdatedAt || null,
+  provider: patient.provider || null,
+  practiceLocation: patient.practiceLocation || null,
+  insurance: patient.insurance || null,
+});
+
 export default function Patients() {
   const { startCall, status: callStatus } = useCall();
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -206,7 +237,6 @@ export default function Patients() {
   const [search, setSearch] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusSavingId, setStatusSavingId] = useState<string | null>(null);
   const [queueSaving, setQueueSaving] = useState(false);
@@ -214,14 +244,15 @@ export default function Patients() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [queueModalOpen, setQueueModalOpen] = useState(false);
   const [queueForm, setQueueForm] = useState<QueueForm | null>(null);
+  const [selectedPatientIds, setSelectedPatientIds] = useState<string[]>([]);
   const [statusDrafts, setStatusDrafts] = useState<Record<string, string>>({});
   const [providers, setProviders] = useState<Provider[]>([]);
   const [practiceLocations, setPracticeLocations] = useState<
     PracticeLocation[]
   >([]);
-  const [practiceGroups, setPracticeGroups] = useState<Provider[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [insurances, setInsurances] = useState<Insurance[]>([]);
-  const [payers, setPayers] = useState<Payer[]>([]);
+  const [loading, setLoading] = useState(false);
   const {
     register,
     handleSubmit,
@@ -230,57 +261,54 @@ export default function Patients() {
     watch,
   } = useForm<PatientFormValues>({ defaultValues });
 
+  /* ──────────────────────────────────────────────
+   * FIX 1: fetchPatients now accepts search param
+   *         and passes ALL filter fields to the API
+   * ────────────────────────────────────────────── */
   const fetchPatients = useCallback(
-    async (page: number) => {
+    async (page: number, currentFilters: Filters, currentSearch: string) => {
       setLoading(true);
       try {
-        const params = {
-          page,
-          limit: 10,
-          search,
-          practiceLocationId: filters.practiceLocationId || undefined,
-          practiceGroupId: filters.practiceGroupId || undefined,
-          memberPlanStatus: filters.memberPlanStatus || undefined,
-          statusDateFrom: filters.statusDateFrom || undefined,
-          statusDateTo: filters.statusDateTo || undefined,
-        };
-        const res = await api.get("/patients", { params });
-        const nextPatients = res.data?.data?.patients ?? [];
-        setPatients(nextPatients);
-        setPagination(res.data?.data?.pagination ?? defaultPagination);
-        setStatusDrafts(
-          Object.fromEntries(
-            nextPatients.map((patient: Patient) => [
-              patient.id,
-              patient.memberPlanStatus || "",
-            ]),
-          ),
-        );
-      } catch (err) {
-        console.error("Failed to load patients", err);
-        toast.error("Failed to load patients");
+        const response = await api.get(`/patients`, {
+          params: {
+            page,
+            search: currentSearch || undefined,
+            practiceLocationId: currentFilters.practiceLocationId || undefined,
+            groupId: currentFilters.groupId || undefined,
+            providerId: currentFilters.providerId || undefined,
+            insuranceId: currentFilters.insuranceId || undefined,
+            memberPlanStatus: currentFilters.memberPlanStatus || undefined,
+            statusDateFrom: currentFilters.statusDateFrom || undefined,
+            statusDateTo: currentFilters.statusDateTo || undefined,
+          },
+        });
+
+        // ✅ FIX: Match the same nested structure used in fetchLookups
+        const body = response.data?.data ?? response.data;
+        setPatients(body?.patients ?? []);
+        setPagination(body?.pagination ?? defaultPagination);
+      } catch {
+        toast.error("Failed to fetch patients.");
       } finally {
         setLoading(false);
       }
     },
-    [filters, search],
+    [],
   );
 
   const fetchLookups = useCallback(async () => {
     try {
-      const [providersRes, locsRes, groupsRes, insurancesRes, payersRes] =
+      const [providersRes, locsRes, groupsRes, insurancesRes] =
         await Promise.all([
-          api.get("/doctors", { params: { limit: 100 } }),
-          api.get("/practice-locations", { params: { limit: 100 } }),
           api.get("/providers", { params: { limit: 100 } }),
+          api.get("/practice-locations", { params: { limit: 100 } }),
+          api.get("/groups", { params: { limit: 100 } }),
           api.get("/insurances", { params: { limit: 100 } }),
-          api.get("/payers", { params: { limit: 100 } }),
         ]);
-      setProviders(providersRes.data?.data?.doctors ?? []);
+      setProviders(providersRes.data?.data?.providers ?? []);
       setPracticeLocations(locsRes.data?.data?.practiceLocations ?? []);
-      setPracticeGroups(groupsRes.data?.data?.providers ?? []);
+      setGroups(groupsRes.data?.data?.groups ?? []);
       setInsurances(insurancesRes.data?.data?.insurances ?? []);
-      setPayers(payersRes.data?.data?.payers ?? []);
     } catch (err) {
       console.error("Failed to load dropdown data", err);
       toast.error("Failed to load dropdown data");
@@ -290,13 +318,22 @@ export default function Patients() {
   useEffect(() => {
     fetchLookups();
   }, [fetchLookups]);
+
+  // Debounce the search input
   useEffect(() => {
     const timer = setTimeout(() => setSearch(inputValue.trim()), 350);
     return () => clearTimeout(timer);
   }, [inputValue]);
+
+  /* ──────────────────────────────────────────────
+   * FIX 2: single useEffect that refetches when
+   *         filters OR search change, always
+   *         resets to page 1
+   * ────────────────────────────────────────────── */
   useEffect(() => {
-    fetchPatients(1);
-  }, [fetchPatients]);
+    fetchPatients(1, filters, search);
+    setSelectedPatientIds([]); // clear selection on filter/search change
+  }, [fetchPatients, filters, search]);
 
   const openCreateModal = () => {
     setEditingPatient(null);
@@ -323,12 +360,14 @@ export default function Patients() {
       city: patient.city || "",
       state: patient.state || "",
       zip: patient.zip || "",
+      payerName: patient.payerName || "",
+      payerMemberId: patient.payerMemberId || "",
+      chartNumber: patient.chartNumber || "",
+      pref: (patient.pref as "Group" | "Provider" | "") || "",
       providerId: patient.providerId || null,
       practiceLocationId: patient.practiceLocationId || null,
-      practiceGroupId: patient.practiceGroupId || null,
+      groupId: patient.groupId || null,
       insuranceId: patient.insuranceId || null,
-      payerId: patient.payerId || null,
-      payerMemberId: patient.payerMemberId || "",
       memberPlanStatus: patient.memberPlanStatus || "",
     });
     setIsModalOpen(true);
@@ -344,6 +383,10 @@ export default function Patients() {
   const handleStatusDraftChange = (patientId: string, value: string) =>
     setStatusDrafts((current) => ({ ...current, [patientId]: value }));
 
+  /* ──────────────────────────────────────────────
+   * FIX 3: after status update, refetch with
+   *         current filters + search, not defaults
+   * ────────────────────────────────────────────── */
   const handleUpdateInsuranceStatus = async (patient: Patient) => {
     const memberPlanStatus = statusDrafts[patient.id];
     if (!memberPlanStatus) return toast.error("Select a status first");
@@ -353,7 +396,7 @@ export default function Patients() {
         memberPlanStatus,
       });
       toast.success("Insurance status updated");
-      await fetchPatients(pagination.page);
+      await fetchPatients(pagination.page, filters, search);
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message || "Failed to update insurance status",
@@ -363,14 +406,47 @@ export default function Patients() {
     }
   };
 
+  const togglePatientSelection = (patientId: string) => {
+    setSelectedPatientIds((current) =>
+      current.includes(patientId)
+        ? current.filter((id) => id !== patientId)
+        : [...current, patientId],
+    );
+  };
+
+  /* ──────────────────────────────────────────────
+   * FIX 4: toggleSelectAll checks by actual IDs
+   *         not just array length
+   * ────────────────────────────────────────────── */
+  const toggleSelectAllOnPage = () => {
+    const pageIds = patients.map((p) => p.id);
+    const allSelected = pageIds.every((id) => selectedPatientIds.includes(id));
+    setSelectedPatientIds(allSelected ? [] : pageIds);
+  };
+
   const openQueueModal = (patient: Patient) => {
     setQueueForm({
-      patientId: patient.id,
-      patientName: `${patient.firstName} ${patient.lastName}`,
+      patientIds: [patient.id],
+      patientLabel: `${patient.firstName} ${patient.lastName}`,
       name: `${patient.firstName} ${patient.lastName} verification queue`,
       description: patient.practiceLocation?.name
         ? `Created from patients page for ${patient.practiceLocation.name}`
         : "Created from patients page",
+      scheduledAt: "",
+    });
+    setQueueModalOpen(true);
+  };
+
+  const openBulkQueueModal = () => {
+    if (selectedPatientIds.length === 0) {
+      toast.error("Select at least one patient");
+      return;
+    }
+    setQueueForm({
+      patientIds: selectedPatientIds,
+      patientLabel: `${selectedPatientIds.length} selected patients`,
+      name: `Selected patients verification queue`,
+      description: "Created from patients page bulk selection",
       scheduledAt: "",
     });
     setQueueModalOpen(true);
@@ -385,12 +461,13 @@ export default function Patients() {
         name: queueForm.name.trim(),
         description: queueForm.description.trim() || undefined,
         filterType: "specific_patients",
-        patientIds: [queueForm.patientId],
+        patientIds: queueForm.patientIds,
         scheduledAt: queueForm.scheduledAt || undefined,
       });
-      toast.success(`${queueForm.patientName} added to queue`);
+      toast.success(`${queueForm.patientLabel} added to queue`);
       setQueueModalOpen(false);
       setQueueForm(null);
+      setSelectedPatientIds([]);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to create queue");
     } finally {
@@ -398,16 +475,13 @@ export default function Patients() {
     }
   };
 
+  /* ──────────────────────────────────────────────
+   * FIX 5: after create/edit, refetch with current
+   *         filters + search
+   * ────────────────────────────────────────────── */
   const onSubmit = async (values: PatientFormValues) => {
     setSaving(true);
     try {
-      const selectedPayer = values.payerId
-        ? payers.find((payer) => payer.id === values.payerId)
-        : null;
-      if (!selectedPayer) {
-        setSaving(false);
-        return toast.error("Please select a payer");
-      }
       const submitData = {
         firstName: values.firstName,
         lastName: values.lastName,
@@ -421,13 +495,14 @@ export default function Patients() {
         city: values.city,
         state: values.state,
         zip: values.zip,
-        payerName: selectedPayer.name,
+        payerName: values.payerName,
+        payerMemberId: values.payerMemberId || undefined,
+        chartNumber: values.chartNumber || undefined,
+        pref: values.pref || undefined,
         providerId: values.providerId || null,
         practiceLocationId: values.practiceLocationId || null,
-        practiceGroupId: values.practiceGroupId || null,
+        groupId: values.groupId || null,
         insuranceId: values.insuranceId || null,
-        payerId: values.payerId,
-        payerMemberId: values.payerMemberId || undefined,
         memberPlanStatus: values.memberPlanStatus || undefined,
       };
       if (editingPatient) {
@@ -438,7 +513,7 @@ export default function Patients() {
         toast.success("Patient created");
       }
       closeModal();
-      await fetchPatients(1);
+      await fetchPatients(1, filters, search);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Unable to save patient");
     } finally {
@@ -446,15 +521,22 @@ export default function Patients() {
     }
   };
 
-  const totalUnverified = patients.filter(
+  const totalUnverified = patients?.filter(
     (patient) => !patient.memberPlanStatus,
   ).length;
-  const totalActive = patients.filter(
+  const totalActive = patients?.filter(
     (patient) => patient.memberPlanStatus === "Active",
   ).length;
-  const totalNeedsReview = patients.filter((patient) =>
+  const totalNeedsReview = patients?.filter((patient) =>
     ["Unknown", "Error", "No Answer"].includes(patient.memberPlanStatus || ""),
   ).length;
+
+  /* ──────────────────────────────────────────────
+   * FIX 6: check actual IDs, not just count
+   * ────────────────────────────────────────────── */
+  const allSelectedOnPage =
+    patients?.length > 0 &&
+    patients?.every((p) => selectedPatientIds.includes(p.id));
 
   return (
     <div className="p-8 space-y-8">
@@ -464,12 +546,23 @@ export default function Patients() {
         icon={Users}
         action={
           <div className="flex gap-3">
+            {/* FIX 7: Refresh uses current filters + search */}
             <button
-              onClick={() => fetchPatients(pagination.page || 1)}
+              onClick={() =>
+                fetchPatients(pagination.page || 1, filters, search)
+              }
               className="btn-ghost inline-flex items-center gap-2"
             >
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
               Refresh
+            </button>
+            <button
+              onClick={openBulkQueueModal}
+              disabled={selectedPatientIds.length === 0}
+              className="btn-ghost inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CheckSquare size={14} />
+              Queue Selected
             </button>
             <button
               onClick={openCreateModal}
@@ -481,6 +574,7 @@ export default function Patients() {
           </div>
         }
       />
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="glass-card p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -513,98 +607,99 @@ export default function Patients() {
           </p>
         </div>
       </div>
+
       <section className="glass-card p-5 space-y-4">
         <div className="overflow-x-auto pb-1">
           <div className="flex min-w-[1180px] items-center gap-3">
-          <div className="relative">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+            <div className="relative">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              />
+              <input
+                type="text"
+                placeholder="Search by patient name..."
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                className="input-field h-10 min-w-[250px] pl-9 text-sm"
+              />
+            </div>
+            <select
+              className="input-field h-10 min-w-[150px] text-sm"
+              value={filters.practiceLocationId}
+              onChange={(event) =>
+                handleFilterChange("practiceLocationId", event.target.value)
+              }
+            >
+              <option value="">All locations</option>
+              {practiceLocations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}
+                </option>
+              ))}
+            </select>
+            <select
+              className="input-field h-10 min-w-[170px] text-sm"
+              value={filters.groupId}
+              onChange={(event) =>
+                handleFilterChange("groupId", event.target.value)
+              }
+            >
+              <option value="">All Groups</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+            <select
+              className="input-field h-10 min-w-[145px] text-sm"
+              value={filters.memberPlanStatus}
+              onChange={(event) =>
+                handleFilterChange("memberPlanStatus", event.target.value)
+              }
+            >
+              {queryStatusOptions.map((option) => (
+                <option key={option.value || "all"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="date"
+              className="input-field h-10 min-w-[148px] text-sm"
+              value={filters.statusDateFrom}
+              onChange={(event) =>
+                handleFilterChange("statusDateFrom", event.target.value)
+              }
             />
             <input
-              type="text"
-              placeholder="Search by patient name..."
-              value={inputValue}
-              onChange={(event) => setInputValue(event.target.value)}
-              className="input-field h-10 min-w-[250px] pl-9 text-sm"
+              type="date"
+              className="input-field h-10 min-w-[148px] text-sm"
+              value={filters.statusDateTo}
+              onChange={(event) =>
+                handleFilterChange("statusDateTo", event.target.value)
+              }
             />
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="btn-ghost h-10 whitespace-nowrap !px-4 text-sm"
+            >
+              Clear Filters
+            </button>
           </div>
-          <select
-            className="input-field h-10 min-w-[150px] text-sm"
-            value={filters.practiceLocationId}
-            onChange={(event) =>
-              handleFilterChange("practiceLocationId", event.target.value)
-            }
-          >
-            <option value="">All locations</option>
-            {practiceLocations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="input-field h-10 min-w-[170px] text-sm"
-            value={filters.practiceGroupId}
-            onChange={(event) =>
-              handleFilterChange("practiceGroupId", event.target.value)
-            }
-          >
-            <option value="">All practice groups</option>
-            {practiceGroups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="input-field h-10 min-w-[145px] text-sm"
-            value={filters.memberPlanStatus}
-            onChange={(event) =>
-              handleFilterChange("memberPlanStatus", event.target.value)
-            }
-          >
-            {queryStatusOptions.map((option) => (
-              <option key={option.value || "all"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            className="input-field h-10 min-w-[148px] text-sm"
-            value={filters.statusDateFrom}
-            onChange={(event) =>
-              handleFilterChange("statusDateFrom", event.target.value)
-            }
-          />
-          <input
-            type="date"
-            className="input-field h-10 min-w-[148px] text-sm"
-            value={filters.statusDateTo}
-            onChange={(event) =>
-              handleFilterChange("statusDateTo", event.target.value)
-            }
-          />
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="btn-ghost h-10 whitespace-nowrap !px-4 text-sm"
-          >
-            Clear Filters
-          </button>
-        </div>
         </div>
         <div className="flex flex-wrap gap-4 text-xs text-slate-500">
           <span className="inline-flex items-center gap-2">
             <CalendarRange size={13} />
             Status date filters use the insurance status updated date
           </span>
-          <span>
-            Provider = individual doctor, Practice Group = group entity
-          </span>
+          <span>{selectedPatientIds.length} selected on this page</span>
+          <span>Provider = individual doctor, Group = group entity</span>
         </div>
       </section>
+
       <section className="space-y-4">
         {loading ? (
           <div className="glass-card p-16 flex justify-center">
@@ -623,11 +718,19 @@ export default function Patients() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-slate-500 text-xs uppercase tracking-[0.15em] border-b border-brand-100 bg-brand-50/80">
+                    <th className="px-4 py-2.5 text-left">
+                      <input
+                        type="checkbox"
+                        checked={allSelectedOnPage}
+                        onChange={toggleSelectAllOnPage}
+                        aria-label="Select all patients on this page"
+                      />
+                    </th>
                     <th className="px-4 py-2.5 text-left">Patient</th>
                     <th className="px-4 py-2.5 text-left">Contact</th>
                     <th className="px-4 py-2.5 text-left">Provider</th>
-                    <th className="px-4 py-2.5 text-left">Practice Group</th>
-                    <th className="px-4 py-2.5 text-left">Location</th>
+                    <th className="px-4 py-2.5 text-left">Group</th>
+                    <th className="px-4 py-2.5 text-left">Practice Location</th>
                     <th className="px-4 py-2.5 text-left">Insurance</th>
                     <th className="px-4 py-2.5 text-left">Status</th>
                     <th className="px-4 py-2.5 text-left">Actions</th>
@@ -639,6 +742,14 @@ export default function Patients() {
                       key={patient.id}
                       className="hover:bg-brand-50/35 transition-colors align-top"
                     >
+                      <td className="px-4 py-3 align-top">
+                        <input
+                          type="checkbox"
+                          checked={selectedPatientIds.includes(patient.id)}
+                          onChange={() => togglePatientSelection(patient.id)}
+                          aria-label={`Select ${patient.firstName} ${patient.lastName}`}
+                        />
+                      </td>
                       <td className="px-4 py-3 min-w-[220px]">
                         <p className="font-semibold text-ink-950">
                           {patient.firstName}{" "}
@@ -659,9 +770,7 @@ export default function Patients() {
                           {patient.email || "No email address"}
                         </p>
                         <p className="mt-1 text-slate-500">
-                          {patient.payer?.name ||
-                            patient.payerName ||
-                            "No payer"}
+                          {patient.payerName || "No payer"}
                         </p>
                       </td>
                       <td className="px-4 py-3 min-w-[160px] text-slate-600">
@@ -674,10 +783,10 @@ export default function Patients() {
                       </td>
                       <td className="px-4 py-3 min-w-[170px] text-slate-600">
                         <p className="font-semibold text-ink-950">
-                          {patient.practiceGroup?.name || "Not linked"}
+                          {patient.group?.name || "Not linked"}
                         </p>
                         <p className="text-slate-500 mt-1">
-                          NPI: {patient.practiceGroup?.npi || "N/A"}
+                          Category: {patient.group?.category || "N/A"}
                         </p>
                       </td>
                       <td className="px-4 py-3 min-w-[160px] text-slate-600">
@@ -731,7 +840,14 @@ export default function Patients() {
                             title="Save insurance status"
                             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-brand-200 bg-brand-500 text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            <Save size={14} className={statusSavingId === patient.id ? "animate-pulse" : ""} />
+                            <Save
+                              size={14}
+                              className={
+                                statusSavingId === patient.id
+                                  ? "animate-pulse"
+                                  : ""
+                              }
+                            />
                           </button>
                           <button
                             type="button"
@@ -753,6 +869,9 @@ export default function Patients() {
                                   insuranceCompany: patient.insurance?.name,
                                   insurancePhone:
                                     patient.insurance?.phone || undefined,
+                                  providerNpi:
+                                    patient.provider?.npi || undefined,
+                                  lookupData: buildPatientLookupData(patient),
                                 },
                               })
                             }
@@ -782,14 +901,16 @@ export default function Patients() {
             </div>
           </div>
         )}
+
         <div className="glass-card overflow-hidden">
+          {/* FIX 8: pagination uses current filters + search */}
           <TablePagination
             page={pagination.page}
             totalPages={pagination.totalPages}
             total={pagination.total}
             onPageChange={(page) => {
               if (page >= 1 && page <= pagination.totalPages)
-                fetchPatients(page);
+                fetchPatients(page, filters, search);
             }}
           />
         </div>
@@ -798,7 +919,7 @@ export default function Patients() {
       {queueModalOpen && queueForm && (
         <AppModal
           title="Add Patient To Queue"
-          subtitle={`Create a queue entry for ${queueForm.patientName}.`}
+          subtitle={`Create a queue entry for ${queueForm.patientLabel}.`}
           onClose={() => !queueSaving && setQueueModalOpen(false)}
           maxWidthClassName="max-w-2xl"
         >
@@ -1015,12 +1136,12 @@ export default function Patients() {
               </select>
             </div>
             <div>
-              {label("Practice Group")}
-              <select className="input-field" {...register("practiceGroupId")}>
+              {label("Group")}
+              <select className="input-field" {...register("groupId")}>
                 <option value="">Select Group</option>
-                {practiceGroups.map((group) => (
+                {groups.map((group) => (
                   <option key={group.id} value={group.id}>
-                    {group.name} (NPI: {group.npi})
+                    {group.name} ({group.category})
                   </option>
                 ))}
               </select>
@@ -1048,27 +1169,24 @@ export default function Patients() {
               </select>
             </div>
             <div>
-              {label("Payer", true)}
-              <select
-                className="input-field"
-                {...register("payerId", { required: "Payer is required" })}
-              >
-                <option value="">Select payer</option>
-                {payers.map((payer) => (
-                  <option key={payer.id} value={payer.id}>
-                    {payer.name}
-                  </option>
-                ))}
-              </select>
-              {errors.payerId && (
-                <p className="text-xs text-red-600 mt-1">
-                  {errors.payerId.message}
-                </p>
-              )}
+              {label("Payer Name")}
+              <input className="input-field" {...register("payerName")} />
             </div>
             <div>
-              {label("Member ID")}
+              {label("Payer Member ID")}
               <input className="input-field" {...register("payerMemberId")} />
+            </div>
+            <div>
+              {label("Chart Number")}
+              <input className="input-field" {...register("chartNumber")} />
+            </div>
+            <div>
+              {label("Preference")}
+              <select className="input-field" {...register("pref")}>
+                <option value="">Select Preference</option>
+                <option value="Group">Group</option>
+                <option value="Provider">Provider</option>
+              </select>
             </div>
             <div>
               {label("Plan Status")}

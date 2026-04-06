@@ -10,11 +10,13 @@ import {
   RefreshCw,
   Trash2,
   UserRound,
+  Headphones,
 } from 'lucide-react'
 import api from '../lib/api'
 import PageHeader from '../components/PageHeader'
 import TablePagination from '../components/TablePagination'
 import AppModal from '../components/AppModal'
+import QueueCallListening from '../components/QueueCallListening'
 
 type QueueStatus = 'active' | 'paused' | 'completed' | 'cancelled'
 type QueueItemStatus =
@@ -59,7 +61,7 @@ interface QueueItem {
     lastName: string
     dob: string
     provider?: { name: string } | null
-    practiceGroup?: { name: string } | null
+    group?: { name: string } | null
     practiceLocation?: { name: string } | null
     insurance?: { name: string; phone?: string | null } | null
   }
@@ -147,6 +149,7 @@ export default function CallQueue() {
   const [locations, setLocations] = useState<PracticeLocationOption[]>([])
   const [patients, setPatients] = useState<PatientOption[]>([])
   const [createForm, setCreateForm] = useState(defaultCreateForm)
+  const [listeningItemId, setListeningItemId] = useState<string | null>(null)
 
   const selectedQueue = queues.find((queue) => queue.id === selectedQueueId) ?? null
   const totalQueuedPatients = queues.reduce((sum, queue) => sum + queue.totalCount, 0)
@@ -538,7 +541,7 @@ export default function CallQueue() {
                         <td className="px-4 py-3 align-top">
                           <div className="space-y-1 text-slate-600">
                             <p>{item.patient.insurance?.name || 'No insurance linked'}</p>
-                            <p>{item.patient.practiceGroup?.name || 'No practice group'}</p>
+                            <p>{item.patient.group?.name || 'No group'}</p>
                             <p>{item.patient.provider?.name || 'No provider'}</p>
                           </div>
                         </td>
@@ -567,6 +570,15 @@ export default function CallQueue() {
                             <Trash2 size={13} />
                             Cancel
                           </button>
+                          {item.status === 'calling' && (
+                            <button
+                              onClick={() => setListeningItemId(item.id)}
+                              className="ml-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+                            >
+                              <Headphones size={13} />
+                              Listen
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -767,6 +779,23 @@ export default function CallQueue() {
             </div>
           </div>
         </AppModal>
+      )}
+
+      {listeningItemId && (
+        <>
+          {(() => {
+            const listeningItem = items.find((item) => item.id === listeningItemId)
+            if (!listeningItem) return null
+            return (
+              <QueueCallListening
+                queueItemId={listeningItemId}
+                patientName={`${listeningItem.patient.firstName} ${listeningItem.patient.lastName}`}
+                insuranceName={listeningItem.patient.insurance?.name}
+                onClose={() => setListeningItemId(null)}
+              />
+            )
+          })()}
+        </>
       )}
     </div>
   )

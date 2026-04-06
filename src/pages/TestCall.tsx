@@ -17,6 +17,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
+import QueueCallListening from "../components/QueueCallListening";
 import { useCall, type ActiveCall } from "../contexts/CallContext";
 
 const AGENT_URL = "http://localhost:4100";
@@ -67,14 +68,24 @@ function ActiveCallCard({
   call,
   stopping,
   onStop,
+  onListen,
 }: {
   call: ActiveCall;
   stopping: boolean;
   onStop: (roomName: string) => void;
+  onListen: (call: ActiveCall) => void;
 }) {
   const navigate = useNavigate();
   const duration = useLiveDuration(call.startTime);
   const isTest = call.mode === "test";
+  const sourceLabel =
+    call.source === "queue_system"
+      ? "Queue"
+      : call.source === "patient_list"
+        ? "Patient"
+        : call.source === "test_call"
+          ? "Test"
+          : "3CX";
 
   return (
     <div className="overflow-hidden rounded-xl border border-brand-100 bg-white transition-all hover:shadow-md hover:shadow-brand-600/5">
@@ -117,6 +128,9 @@ function ActiveCallCard({
             className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold ${stateBadgeColor(call.state)}`}
           >
             {call.state.replace(/_/g, " ")}
+          </span>
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+            {sourceLabel}
           </span>
 
           {call.identityVerified && (
@@ -171,6 +185,13 @@ function ActiveCallCard({
           </span>
           <div className="flex items-center gap-3">
             <button
+              onClick={() => onListen(call)}
+              className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
+              title="Listen to call audio"
+            >
+              Listen
+            </button>
+            <button
               onClick={() => onStop(call.roomName)}
               disabled={stopping}
               className="rounded-full border border-rose-200 px-3 py-1 text-[10px] font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
@@ -201,6 +222,7 @@ export default function TestCall() {
     roomName,
   } = useCall();
   const [stoppingRoom, setStoppingRoom] = useState<string | null>(null);
+  const [listeningCall, setListeningCall] = useState<ActiveCall | null>(null);
 
   const roomCalls = activeCalls.filter((call) => call.mode === "room");
   const testCalls = activeCalls.filter((call) => call.mode === "test");
@@ -419,6 +441,7 @@ export default function TestCall() {
                 call={call}
                 stopping={stoppingRoom === call.roomName}
                 onStop={handleStopCall}
+                onListen={setListeningCall}
               />
             ))}
           </div>
@@ -447,6 +470,15 @@ export default function TestCall() {
           </div>
         </div>
       </div>
+
+      {listeningCall && (
+        <QueueCallListening
+          queueItemId={listeningCall.callSessionId}
+          patientName={listeningCall.patientName || "Unknown"}
+          insuranceName={undefined}
+          onClose={() => setListeningCall(null)}
+        />
+      )}
     </div>
   );
 }

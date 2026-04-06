@@ -13,7 +13,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Shield,
-  CreditCard,
   Stethoscope,
   MapPin,
   Phone,
@@ -83,7 +82,7 @@ export default function Layout() {
             { to: "/call-queue", icon: ListOrdered, label: "Queue Management" },
             { to: "/results", icon: ClipboardList, label: "Results" },
             { to: "/coverage", icon: ShieldCheck, label: "Coverage" },
-            { to: "/test-call", icon: Headphones, label: "Voice Call Center" },
+            { to: "/voice-call-center", icon: Headphones, label: "Voice Call Center" },
             { to: "/calls", icon: Phone, label: "Call Log" },
             { to: "/appointments", icon: Calendar, label: "Appointments" },
             { to: "/faq", icon: HelpCircle, label: "FAQ Manager" },
@@ -115,11 +114,10 @@ export default function Layout() {
             </div>
           )}
           {[
-            { to: "/providers", icon: Building2, label: "Practice Groups" },
-            { to: "/doctors", icon: Stethoscope, label: "Providers" },
+            { to: "/groups", icon: Building2, label: "Groups" },
+            { to: "/providers", icon: Stethoscope, label: "Providers" },
             { to: "/insurances", icon: Shield, label: "Insurances" },
-            { to: "/payers", icon: CreditCard, label: "Payers" },
-            { to: "/practice-locations", icon: MapPin, label: "Locations" },
+            { to: "/practice-locations", icon: MapPin, label: "Practice Locations" },
           ].map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}

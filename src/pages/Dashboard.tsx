@@ -40,6 +40,13 @@ interface DashboardStats {
   coverageStats?: {
     totalCoverageRecords: number;
   };
+  serviceStatus?: {
+    backend?: { status: ServiceState };
+    voiceAgent?: { status: ServiceState };
+    livekit?: { status: ServiceState };
+    deepgram?: { status: ServiceState };
+    queueProcessor?: { running?: boolean };
+  };
 }
 
 function MetricCard({
@@ -56,43 +63,41 @@ function MetricCard({
   helper: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/90 p-5 shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
-      <div className={`absolute inset-x-0 top-0 h-1.5 ${accent}`} />
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+    <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
+      <div className={`absolute inset-x-0 top-0 h-1 ${accent}`} />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
             {label}
           </p>
-          <p className="mt-3 text-3xl font-black text-ink-950">{value}</p>
-          <p className="mt-2 text-xs text-slate-500">{helper}</p>
+          <p className="mt-2 text-2xl font-extrabold text-ink-950">{value}</p>
+          <p className="mt-1.5 truncate text-[11px] text-slate-500">{helper}</p>
         </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${accent}`}>
-          <Icon size={20} className="text-white" />
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accent}`}
+        >
+          <Icon size={18} className="text-white" />
         </div>
       </div>
     </div>
   );
 }
 
-function HealthPill({
-  label,
-  state,
-}: {
-  label: string;
-  state: ServiceState;
-}) {
+function HealthPill({ label, state }: { label: string; state: ServiceState }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-brand-100 bg-white/80 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl border border-brand-100 bg-white/80 px-3.5 py-2.5">
       <span className="text-sm font-semibold text-ink-950">{label}</span>
       <span
-        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ${
           state === "online"
             ? "bg-emerald-100 text-emerald-700"
             : "bg-rose-100 text-rose-700"
         }`}
       >
         <span
-          className={`h-2 w-2 rounded-full ${state === "online" ? "bg-emerald-500" : "bg-rose-500"}`}
+          className={`h-1.5 w-1.5 rounded-full ${
+            state === "online" ? "bg-emerald-500" : "bg-rose-500"
+          }`}
         />
         {state}
       </span>
@@ -102,33 +107,13 @@ function HealthPill({
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [backendState, setBackendState] = useState<ServiceState>("offline");
-  const [voiceState, setVoiceState] = useState<ServiceState>("offline");
   const [loading, setLoading] = useState(true);
 
-const fetchDashboard = async () => {
+  const fetchDashboard = async () => {
     setLoading(true);
     try {
-      const [statsRes, backendHealthRes, voiceHealthRes] = await Promise.allSettled([
-        api.get("/calls/stats"),
-        fetch("http://localhost:4000/health"),
-        fetch("http://localhost:4100/health"),
-      ]);
-
-      if (statsRes.status === "fulfilled") {
-        setStats(statsRes.value.data?.data ?? null);
-      }
-
-      setBackendState(
-        backendHealthRes.status === "fulfilled" && backendHealthRes.value.ok
-          ? "online"
-          : "offline",
-      );
-      setVoiceState(
-        voiceHealthRes.status === "fulfilled" && voiceHealthRes.value.ok
-          ? "online"
-          : "offline",
-      );
+      const statsRes = await api.get("/calls/stats");
+      setStats(statsRes.data?.data ?? null);
     } finally {
       setLoading(false);
     }
@@ -146,9 +131,17 @@ const fetchDashboard = async () => {
 
   const patientStats = stats?.patientStats;
   const queueStats = stats?.queueStats;
+  const serviceStatus = stats?.serviceStatus;
+  const backendState = serviceStatus?.backend?.status || "offline";
+  const voiceState = serviceStatus?.voiceAgent?.status || "offline";
+  const livekitState = serviceStatus?.livekit?.status || "offline";
+  const deepgramState = serviceStatus?.deepgram?.status || "offline";
+  const queueProcessorState = serviceStatus?.queueProcessor?.running
+    ? "online"
+    : "offline";
 
   return (
-    <div className="space-y-8 p-8">
+    <div className="space-y-6 p-6">
       <PageHeader
         title="Dashboard"
         subtitle="Live operations view across calls, coverage imports, patient verification, and queue activity."
@@ -164,33 +157,34 @@ const fetchDashboard = async () => {
         }
       />
 
-      <section className="relative overflow-hidden rounded-[32px] border border-brand-100 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_35%),linear-gradient(135deg,_#f8fbff_0%,_#eef6ff_45%,_#fff7ed_100%)] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.45)]">
-        <div className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
-          <div className="space-y-5">
+      {/* Hero panel */}
+      <section className="glass-card overflow-hidden p-5">
+        <div className="grid gap-5 xl:grid-cols-[1.2fr,0.8fr]">
+          <div className="space-y-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-brand-700">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-brand-700">
                 System Health
               </p>
-              <h2 className="mt-2 text-3xl font-black text-ink-950">
-                Call operations and verification status in one place
+              <h2 className="mt-1.5 text-xl font-extrabold text-ink-950 sm:text-2xl">
+                Call operations &amp; verification status
               </h2>
-              <p className="mt-3 max-w-2xl text-sm text-slate-600">
-                Coverage records imported from CSV now drive patient status first,
-                then the queue picks up only unresolved patients. This board shows
-                the live effect of that flow.
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+                Coverage records imported from CSV drive patient status first,
+                then the queue picks up only unresolved patients. This board
+                shows the live effect of that flow.
               </p>
             </div>
-            <div className="grid gap-3 md:grid-cols-3">
+
+            <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
               <HealthPill label="Backend API" state={backendState} />
               <HealthPill label="Voice Agent" state={voiceState} />
-              <HealthPill
-                label="Queue Engine"
-                state={queueStats?.activeQueues || queueStats?.pendingQueueItems ? "online" : backendState}
-              />
+              <HealthPill label="LiveKit" state={livekitState} />
+              <HealthPill label="Deepgram" state={deepgramState} />
+              <HealthPill label="Queue Engine" state={queueProcessorState} />
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <MetricCard
               label="Live Calls"
               value={stats?.activeCalls ?? 0}
@@ -223,7 +217,8 @@ const fetchDashboard = async () => {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {/* Patient stats row */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Total Patients"
           value={patientStats?.totalPatients ?? 0}
@@ -254,25 +249,28 @@ const fetchDashboard = async () => {
         />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-        <div className="rounded-[28px] border border-brand-100 bg-white/90 p-6 shadow-[0_18px_60px_-36px_rgba(15,23,42,0.45)]">
+      {/* Bottom row */}
+      <section className="grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
+        {/* Queue panel */}
+        <div className="glass-card p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                 Queue Activity
               </p>
-              <h3 className="mt-2 text-xl font-black text-ink-950">
+              <h3 className="mt-1 text-lg font-extrabold text-ink-950">
                 Current verification workload
               </h3>
             </div>
             <Link
               to="/call-queue"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-800"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800"
             >
               Open Queue <ArrowRight size={14} />
             </Link>
           </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <MetricCard
               label="Active Queues"
               value={queueStats?.activeQueues ?? 0}
@@ -295,7 +293,7 @@ const fetchDashboard = async () => {
               accent="bg-emerald-500"
             />
             <MetricCard
-              label="Completed Items"
+              label="Completed"
               value={queueStats?.completedQueueItems ?? 0}
               helper="Finished queue call attempts"
               icon={ShieldCheck}
@@ -304,14 +302,16 @@ const fetchDashboard = async () => {
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-brand-100 bg-white/90 p-6 shadow-[0_18px_60px_-36px_rgba(15,23,42,0.45)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+        {/* Quick actions panel */}
+        <div className="glass-card p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
             Quick Actions
           </p>
-          <h3 className="mt-2 text-xl font-black text-ink-950">
-            Move straight into the next task
+          <h3 className="mt-1 text-lg font-extrabold text-ink-950">
+            Jump into the next task
           </h3>
-          <div className="mt-6 grid gap-3">
+
+          <div className="mt-4 grid gap-2.5">
             {[
               {
                 to: "/upload",
@@ -337,18 +337,18 @@ const fetchDashboard = async () => {
               <Link
                 key={item.to}
                 to={item.to}
-                className="group rounded-2xl border border-brand-100 bg-gradient-to-r from-white to-brand-50/60 px-4 py-4 transition hover:border-brand-200 hover:shadow-md"
+                className="group flex items-center justify-between gap-4 rounded-xl border border-brand-100 bg-gradient-to-r from-white to-brand-50/40 px-4 py-3 transition-all hover:border-brand-300 hover:shadow-sm"
               >
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-bold text-ink-950">{item.label}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.helper}</p>
-                  </div>
-                  <ArrowRight
-                    size={16}
-                    className="text-brand-600 transition group-hover:translate-x-1"
-                  />
+                <div>
+                  <p className="text-sm font-bold text-ink-950">{item.label}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {item.helper}
+                  </p>
                 </div>
+                <ArrowRight
+                  size={14}
+                  className="shrink-0 text-brand-600 transition group-hover:translate-x-0.5"
+                />
               </Link>
             ))}
           </div>

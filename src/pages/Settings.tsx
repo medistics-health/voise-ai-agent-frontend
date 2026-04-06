@@ -71,7 +71,17 @@ const sections: SettingSection[] = [
     fields: [
       { key: 'agent.responseTimeoutMs', label: 'Response Timeout (ms)', type: 'number', placeholder: '8000' },
       { key: 'agent.maxSilenceMs', label: 'Max Silence (ms)', type: 'number', placeholder: '120000' },
+      { key: 'agent.maxCallDurationMs', label: 'Max Call Duration (ms)', type: 'number', placeholder: '0' },
       { key: 'agent.maxVerificationAttempts', label: 'Max Verification Attempts', type: 'number', placeholder: '3' },
+    ],
+  },
+  {
+    id: 'queue',
+    title: 'Queue Runtime',
+    description: 'Automated queue processor settings.',
+    fields: [
+      { key: 'queue.callCompletionDelayMs', label: 'Call Completion Delay (ms)', type: 'number', placeholder: '0' },
+      { key: 'queue.pollIntervalMs', label: 'Processor Poll Interval (ms)', type: 'number', placeholder: '5000' },
     ],
   },
 ]
@@ -201,28 +211,32 @@ export default function SettingsPage() {
             <p className="text-sm text-slate-500 mt-1">{activeSection.description}</p>
           </div>
 
-          <div className="p-6 space-y-5">
-            {activeSection.fields.map((field) => (
-              <div key={field.key}>
-                <label className="label">{field.label}</label>
-                {field.type === 'textarea' ? (
-                  <textarea
-                    className="input-field min-h-[96px]"
-                    value={settings[field.key] ?? ''}
-                    onChange={(event) => handleChange(field.key, event.target.value)}
-                    placeholder={field.placeholder}
-                  />
-                ) : (
-                  <input
-                    type={field.type ?? 'text'}
-                    className="input-field"
-                    value={settings[field.key] ?? ''}
-                    onChange={(event) => handleChange(field.key, event.target.value)}
-                    placeholder={field.placeholder}
-                  />
-                )}
+          <div className="p-6">
+            {activeSection.id === 'agent' || activeSection.id === 'queue' ? (
+              <div className="space-y-5">
+                {activeSection.fields.map((field) => (
+                  <div key={field.key}>
+                    <label className="label">{field.label}</label>
+                    {field.type === 'textarea' ? (
+                      <textarea
+                        className="input-field min-h-[96px]"
+                        value={settings[field.key] ?? ''}
+                        onChange={(event) => handleChange(field.key, event.target.value)}
+                        placeholder={field.placeholder}
+                      />
+                    ) : (
+                      <input
+                        type={field.type ?? 'text'}
+                        className="input-field"
+                        value={settings[field.key] ?? ''}
+                        onChange={(event) => handleChange(field.key, event.target.value)}
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : null}
           </div>
 
           <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">

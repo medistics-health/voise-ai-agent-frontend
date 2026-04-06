@@ -6,9 +6,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Providers from "./pages/Providers";
+import Groups from "./pages/Groups";
 import Insurance from "./pages/Insurance";
-import Payer from "./pages/Payer";
-import Doctors from "./pages/Doctors";
 import PracticeLocations from "./pages/PracticeLocations";
 import Upload from "./pages/Upload";
 import Results from "./pages/Results";
@@ -41,18 +40,16 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/patients" element={<Patients />} />
               <Route path="/providers" element={<Providers />} />
-              <Route path="/doctors" element={<Doctors />} />
-              <Route
-                path="/practice-locations"
+              <Route path="/groups" element={<Groups />} />
+              <Route path="/practice-locations"
                 element={<PracticeLocations />}
               />
               <Route path="/insurances" element={<Insurance />} />
-              <Route path="/payers" element={<Payer />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/results" element={<Results />} />
               <Route path="/results/:jobId" element={<Results />} />
               <Route path="/coverage" element={<Coverage />} />
-              <Route path="/test-call" element={<TestCall />} />
+              <Route path="/voice-call-center" element={<TestCall />} />
               {/* ── NEW Phase 2 routes ── */}
               <Route path="/calls" element={<Calls />} />
               <Route path="/calls/:id" element={<CallDetail />} />

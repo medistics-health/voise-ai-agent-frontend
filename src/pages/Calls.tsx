@@ -117,30 +117,55 @@ export default function Calls() {
   const [search, setSearch] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
+  const [filters] = useState({
+    practiceLocationId: "",
+    groupId: "",
+    providerId: "",
+  });
 
   const fetchCalls = useCallback(
-    async (page: number, searchTerm: string, status: string) => {
-      // setLoading(true);
+    async (
+      page: number,
+      currentSearch: string,
+      currentStatusFilter: string,
+    ) => {
       try {
-        const res = await api.get("/calls", {
-          params: { page, limit: 20, search: searchTerm, status },
+        const response = await api.get(`/calls`, {
+          params: {
+            page,
+            search: currentSearch || undefined,
+            status:
+              currentStatusFilter === "all" ? undefined : currentStatusFilter,
+            practiceLocationId: filters.practiceLocationId || undefined,
+            groupId: filters.groupId || undefined,
+            providerId: filters.providerId || undefined,
+          },
         });
-        setCalls(res.data.data.calls ?? []);
-        setPagination(res.data.data.pagination);
+
+        // ✅ FIX: handle both { data: { calls, pagination } } and { calls, pagination }
+        const body = response.data?.data ?? response.data;
+        setCalls(body?.calls ?? []);
+        setPagination(
+          body?.pagination ?? {
+            total: 0,
+            page: 1,
+            limit: 20,
+            totalPages: 0,
+          },
+        );
       } catch {
-        toast.error("Failed to load calls");
-      } finally {
-        setLoading(false);
+        toast.error("Failed to fetch calls.");
       }
     },
-    [],
+    [filters],
   );
 
   const fetchStats = useCallback(async () => {
     try {
       const res = await api.get("/calls/stats");
-      setStats(res.data.data);
+      // ✅ FIX: safely unwrap
+      const body = res.data?.data ?? res.data;
+      setStats(body ?? null);
     } catch {
       // stats are optional
     }
@@ -260,11 +285,7 @@ export default function Calls() {
 
       {/* Table */}
       <div className="table-shell">
-        {loading ? (
-          <div className="p-16 flex justify-center">
-            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : calls.length === 0 ? (
+        {calls.length === 0 ? (
           <div className="p-16 text-center">
             <Phone size={40} className="text-brand-300 mx-auto mb-3" />
             <p className="text-slate-500 text-sm">No calls found.</p>
@@ -302,20 +323,15 @@ export default function Calls() {
                             {call.metadata?.insuranceCompany ||
                               call.callerName ||
                               call.callerNumber ||
+                              call.metadata?.insurancePhone ||
                               "Unknown"}
                           </p>
-                          {call.metadata?.insurancePhone && (
+                          {(call.metadata?.insurancePhone || call.callerNumber) && 
+                            (call.metadata?.insuranceCompany || call.callerName) && (
                             <p className="text-xs text-slate-500">
-                              {call.metadata.insurancePhone}
+                              {call.metadata?.insurancePhone || call.callerNumber}
                             </p>
                           )}
-                          {!call.metadata?.insurancePhone &&
-                            call.callerName &&
-                            call.callerNumber && (
-                              <p className="text-xs text-slate-500">
-                                {call.callerNumber}
-                              </p>
-                            )}
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-xs text-slate-600">
@@ -365,9 +381,26 @@ export default function Calls() {
                         )}
                       </td>
                       <td className="px-4 py-2.5">
-                        <button className="btn-ghost px-2 py-1.5 text-xs inline-flex items-center gap-1">
-                          View <ArrowRight size={12} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {call.metadata?.insurancePhone && (
+                            <button
+                              className="btn-ghost px-2 py-1.5 text-xs inline-flex items-center gap-1 text-green-600 hover:bg-green-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO: Implement direct call to insurance
+                                toast.success(
+                                  `Call ${call.metadata?.insuranceCompany || "insurance"}: ${call.metadata?.insurancePhone}`
+                                );
+                              }}
+                              title={`Call ${call.metadata?.insuranceCompany}: ${call.metadata?.insurancePhone}`}
+                            >
+                              <Phone size={12} /> Call
+                            </button>
+                          )}
+                          <button className="btn-ghost px-2 py-1.5 text-xs inline-flex items-center gap-1">
+                            View <ArrowRight size={12} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

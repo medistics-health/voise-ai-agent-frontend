@@ -1,17 +1,15 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Bot,
+  Loader2,
+  Maximize2,
+  Minimize2,
   Phone,
   PhoneOff,
-  Mic,
-  MicOff,
   Send,
-  Loader2,
-  Bot,
   User,
   Volume2,
-  Minimize2,
-  Maximize2,
   X,
 } from "lucide-react";
 import { useCall } from "../contexts/CallContext";
@@ -23,9 +21,6 @@ export default function FloatingCallWidget() {
     messages,
     callDuration,
     speakingState,
-    interimText,
-    muted,
-    micSupported,
     callSessionId,
     isWidgetOpen,
     isWidgetMinimized,
@@ -34,7 +29,6 @@ export default function FloatingCallWidget() {
     startCall,
     endCall,
     sendMessage,
-    toggleMute,
     closeWidget,
     toggleMinimize,
     resetCall,
@@ -44,29 +38,40 @@ export default function FloatingCallWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const barsRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll
+  const temporaryControlsEnabled =
+    callSource === "test_call" || callSource === "patient_list";
+  const callDisplayName =
+    (callSource === "patient_list" || callSource === "queue_system") &&
+    patientMetadata
+      ? patientMetadata.name
+      : "AI Receptionist";
+  const isBusy = speakingState === "ai" || speakingState === "processing";
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Animate bars when AI speaks
   useEffect(() => {
     if (speakingState !== "ai" || !barsRef.current) return;
+
     const interval = setInterval(() => {
       if (!barsRef.current) return;
       const bars = barsRef.current.children;
-      for (let i = 0; i < bars.length; i++) {
-        (bars[i] as HTMLElement).style.height =
-          `${Math.max(3, Math.random() * 28)}px`;
+      for (let index = 0; index < bars.length; index++) {
+        (bars[index] as HTMLElement).style.height = `${Math.max(
+          3,
+          Math.random() * 28,
+        )}px`;
       }
     }, 130);
+
     return () => clearInterval(interval);
   }, [speakingState]);
 
   if (!isWidgetOpen) return null;
 
-  const fmtDuration = (s: number) =>
-    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  const fmtDuration = (seconds: number) =>
+    `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`;
 
   const handleSend = () => {
     if (!inputText.trim()) return;
@@ -74,47 +79,28 @@ export default function FloatingCallWidget() {
     setInputText("");
   };
 
-  const handleClose = () => {
-    closeWidget(); // This now ends the call if connected
-  };
-
   const handleEndAndClose = async () => {
     await endCall();
-    // Small delay so user sees "ended" briefly
-    setTimeout(() => {
-      closeWidget();
-    }, 500);
+    setTimeout(() => closeWidget(), 500);
   };
 
-  const isBusy = speakingState === "ai" || speakingState === "processing";
-
-  /* ── Minimized pill ── */
   if (isWidgetMinimized) {
     return (
       <div className="fixed bottom-6 right-6 z-[9999]">
         <button
           onClick={toggleMinimize}
-          className="flex items-center gap-2.5 bg-white border border-brand-200
-                     rounded-full px-4 py-2.5 shadow-xl shadow-brand-600/10
-                     hover:shadow-2xl hover:shadow-brand-600/15 transition-all
-                     hover:scale-105 group"
+          className="group flex items-center gap-2.5 rounded-full border border-brand-200 bg-white px-4 py-2.5 shadow-xl shadow-brand-600/10 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-brand-600/15"
         >
           <div className="relative">
-            <div
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-700
-                            flex items-center justify-center"
-            >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700">
               <Bot size={16} className="text-white" />
             </div>
             {status === "connected" && (
-              <div
-                className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full
-                              bg-green-500 border-2 border-white animate-pulse"
-              />
+              <div className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-500 animate-pulse" />
             )}
           </div>
           <div className="text-left">
-            <p className="text-xs font-bold text-ink-950 leading-none">
+            <p className="text-xs font-bold leading-none text-ink-950">
               {callSource === "patient_list" && patientMetadata
                 ? patientMetadata.name
                 : status === "connected"
@@ -123,19 +109,19 @@ export default function FloatingCallWidget() {
                     ? "Call Ended"
                     : "Ready"}
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="mt-0.5 text-[10px] text-slate-500">
               {fmtDuration(callDuration)}
             </p>
           </div>
           {status === "connected" && (
-            <div className="flex items-end gap-[2px] h-4 ml-1">
-              {Array.from({ length: 4 }).map((_, i) => (
+            <div className="ml-1 flex h-4 items-end gap-[2px]">
+              {Array.from({ length: 4 }).map((_, index) => (
                 <div
-                  key={i}
+                  key={index}
                   className={`w-[3px] rounded-full transition-all duration-100 ${
                     speakingState === "ai"
                       ? "bg-violet-400 animate-pulse"
-                      : speakingState === "user"
+                      : temporaryControlsEnabled && speakingState === "user"
                         ? "bg-brand-400 animate-pulse"
                         : "bg-slate-300"
                   }`}
@@ -146,29 +132,20 @@ export default function FloatingCallWidget() {
           )}
           <Maximize2
             size={12}
-            className="text-slate-400 group-hover:text-brand-600 transition-colors ml-1"
+            className="ml-1 text-slate-400 transition-colors group-hover:text-brand-600"
           />
         </button>
       </div>
     );
   }
 
-  /* ── Expanded widget ── */
   return (
-    <div
-      className="fixed bottom-6 right-6 z-[9999] w-[400px] max-h-[620px]
-                    flex flex-col bg-white rounded-2xl border border-brand-100
-                    shadow-2xl shadow-black/10 overflow-hidden"
-    >
-      {/* ── Header ── */}
-      <div
-        className="flex items-center justify-between px-4 py-3 border-b border-brand-100
-                      bg-gradient-to-r from-brand-50 to-white flex-shrink-0"
-      >
+    <div className="fixed bottom-6 right-6 z-[9999] flex max-h-[620px] w-[400px] flex-col overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-2xl shadow-black/10">
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-brand-100 bg-gradient-to-r from-brand-50 to-white px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full ${
                 status === "connected"
                   ? "bg-gradient-to-br from-brand-500 to-brand-700"
                   : status === "ended"
@@ -178,31 +155,27 @@ export default function FloatingCallWidget() {
             >
               <Bot
                 size={14}
-                className={
-                  status === "connected" ? "text-white" : "text-slate-500"
-                }
+                className={status === "connected" ? "text-white" : "text-slate-500"}
               />
             </div>
             {status === "connected" && (
-              <div
-                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full
-                              bg-green-500 border-2 border-white animate-pulse"
-              />
+              <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500 animate-pulse" />
             )}
           </div>
           <div>
-            <p className="text-xs font-bold text-ink-950 leading-none">
-              {callSource === "patient_list" && patientMetadata
-                ? patientMetadata.name
-                : "AI Receptionist"}
+            <p className="text-xs font-bold leading-none text-ink-950">
+              {callDisplayName}
             </p>
-            {callSource === "patient_list" && patientMetadata?.insuranceCompany && (
-              <p className="text-[10px] text-brand-600 font-medium leading-none mt-0.5">
-                {patientMetadata.insuranceCompany}
-                {patientMetadata.insurancePhone ? ` · ${patientMetadata.insurancePhone}` : ""}
-              </p>
-            )}
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            {(callSource === "patient_list" || callSource === "queue_system") &&
+              patientMetadata?.insuranceCompany && (
+                <p className="mt-0.5 text-[10px] font-medium leading-none text-brand-600">
+                  {patientMetadata.insuranceCompany}
+                  {patientMetadata.insurancePhone
+                    ? ` · ${patientMetadata.insurancePhone}`
+                    : ""}
+                </p>
+              )}
+            <p className="mt-0.5 text-[10px] text-slate-500">
               {status === "connected"
                 ? `Connected · ${fmtDuration(callDuration)}`
                 : status === "connecting"
@@ -216,43 +189,26 @@ export default function FloatingCallWidget() {
 
         <div className="flex items-center gap-1">
           {status === "connected" && (
-            <>
-              <button
-                onClick={toggleMute}
-                className={`p-1.5 rounded-full transition-colors ${
-                  muted
-                    ? "bg-red-100 text-red-600 hover:bg-red-200"
-                    : "bg-brand-50 text-brand-600 hover:bg-brand-100"
-                }`}
-                title={muted ? "Unmute" : "Mute"}
-              >
-                {muted ? <MicOff size={13} /> : <Mic size={13} />}
-              </button>
-              <button
-                onClick={handleEndAndClose}
-                className="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full transition-colors"
-                title="End call"
-              >
-                <PhoneOff size={13} />
-              </button>
-            </>
+            <button
+              onClick={handleEndAndClose}
+              className="rounded-full bg-red-600 p-1.5 text-white transition-colors hover:bg-red-700"
+              title="End call"
+            >
+              <PhoneOff size={13} />
+            </button>
           )}
-
-          {/* Minimize — only when connected */}
           {status === "connected" && (
             <button
               onClick={toggleMinimize}
-              className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
               title="Minimize"
             >
               <Minimize2 size={13} />
             </button>
           )}
-
-          {/* Close/X — always visible */}
           <button
-            onClick={handleClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            onClick={closeWidget}
+            className="rounded-full p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
             title={status === "connected" ? "End call & close" : "Close"}
           >
             <X size={13} />
@@ -260,149 +216,117 @@ export default function FloatingCallWidget() {
         </div>
       </div>
 
-      {/* ── Voice visualizer strip (only when connected) ── */}
       {status === "connected" && (
-        <div className="px-4 py-2.5 border-b border-brand-50 bg-slate-50/50 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                speakingState === "ai"
-                  ? "bg-violet-100"
-                  : speakingState === "user"
-                    ? "bg-brand-100"
-                    : speakingState === "processing"
-                      ? "bg-amber-100"
-                      : "bg-slate-100"
-              }`}
-            >
-              {speakingState === "processing" ? (
-                <Loader2 size={12} className="text-amber-600 animate-spin" />
-              ) : speakingState === "ai" ? (
-                <Volume2 size={12} className="text-violet-600" />
-              ) : (
-                <Mic
-                  size={12}
-                  className={
-                    speakingState === "user"
-                      ? "text-brand-600"
-                      : "text-slate-400"
-                  }
-                />
-              )}
-            </div>
-
-            <div ref={barsRef} className="flex items-end gap-[2px] h-6 flex-1">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-[4px] rounded-full transition-all duration-75 flex-1 max-w-[6px] ${
-                    speakingState === "ai"
-                      ? "bg-violet-300"
-                      : speakingState === "user"
-                        ? "bg-brand-300"
-                        : "bg-slate-200"
-                  }`}
-                  style={{ height: "3px" }}
-                />
-              ))}
-            </div>
-
-            <span
-              className={`text-[10px] font-semibold flex-shrink-0 ${
-                speakingState === "ai"
-                  ? "text-violet-600"
-                  : speakingState === "user"
-                    ? "text-brand-600"
-                    : speakingState === "processing"
-                      ? "text-amber-600"
-                      : "text-slate-400"
-              }`}
-            >
-              {speakingState === "ai"
-                ? "Speaking"
-                : speakingState === "user"
-                  ? "Listening"
+        <div className="flex flex-shrink-0 items-center gap-3 border-b border-brand-50 bg-slate-50/50 px-4 py-2.5">
+          <div
+            className={`flex h-7 w-7 items-center justify-center rounded-full ${
+              speakingState === "ai"
+                ? "bg-violet-100"
+                : temporaryControlsEnabled && speakingState === "user"
+                  ? "bg-brand-100"
                   : speakingState === "processing"
-                    ? "Thinking"
-                    : muted
-                      ? "Muted"
-                      : "Ready"}
-            </span>
+                    ? "bg-amber-100"
+                    : "bg-slate-100"
+            }`}
+          >
+            {speakingState === "processing" ? (
+              <Loader2 size={12} className="animate-spin text-amber-600" />
+            ) : speakingState === "ai" ? (
+              <Volume2 size={12} className="text-violet-600" />
+            ) : (
+              <Volume2
+                size={12}
+                className="text-slate-400"
+              />
+            )}
           </div>
 
-          {interimText && (
-            <p className="text-[10px] text-brand-500 italic mt-1.5 truncate">
-              "{interimText}"
-            </p>
-          )}
+          <div ref={barsRef} className="flex h-6 flex-1 items-end gap-[2px]">
+            {Array.from({ length: 24 }).map((_, index) => (
+              <div
+                key={index}
+                className={`max-w-[6px] flex-1 rounded-full transition-all duration-75 ${
+                  speakingState === "ai"
+                    ? "bg-violet-300"
+                    : temporaryControlsEnabled && speakingState === "user"
+                      ? "bg-brand-300"
+                      : "bg-slate-200"
+                }`}
+                style={{ height: "3px" }}
+              />
+            ))}
+          </div>
+
+          <span
+            className={`flex-shrink-0 text-[10px] font-semibold ${
+              speakingState === "ai"
+                ? "text-violet-600"
+                : speakingState === "processing"
+                  ? "text-amber-600"
+                  : "text-slate-400"
+            }`}
+          >
+            {speakingState === "ai"
+              ? "Speaking"
+              : speakingState === "processing"
+                ? "Thinking"
+                : "Ready"}
+          </span>
         </div>
       )}
 
-      {/* ── Messages ── */}
       <div
-        className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0"
+        className="min-h-0 flex-1 overflow-y-auto p-3 space-y-2"
         style={{ maxHeight: status === "connected" ? "320px" : "400px" }}
       >
-        {/* Idle state */}
         {status === "idle" && (
-          <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <div
-              className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-100 to-brand-50
-                            flex items-center justify-center border border-brand-200"
-            >
+          <div className="flex flex-col items-center justify-center gap-4 py-12">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-brand-200 bg-gradient-to-br from-brand-100 to-brand-50">
               <Phone size={24} className="text-brand-400" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-semibold text-ink-950">
-                Start a Test Call
-              </p>
-              <p className="text-[11px] text-slate-500 mt-1">
-                Talk to the AI receptionist
+              <p className="text-sm font-semibold text-ink-950">Start a Test Call</p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Use text input to test the AI receptionist
               </p>
             </div>
             <button
-
               onClick={() => startCall()}
-              className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5
-                         rounded-full text-sm font-bold flex items-center gap-2
-                         transition-all hover:scale-105 shadow-lg shadow-green-600/25"
+              className="flex items-center gap-2 rounded-full bg-green-600 px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-green-600/25 transition-all hover:scale-105 hover:bg-green-700"
             >
               <Phone size={16} /> Start Call
             </button>
           </div>
         )}
 
-        {/* Connecting */}
         {status === "connecting" && (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-full border-2 border-brand-300 animate-ping opacity-30" />
-              <div className="absolute inset-0 rounded-full bg-brand-50 flex items-center justify-center">
-                <Loader2 size={24} className="text-brand-500 animate-spin" />
+          <div className="flex flex-col items-center justify-center gap-3 py-12">
+            <div className="relative h-16 w-16">
+              <div className="absolute inset-0 animate-ping rounded-full border-2 border-brand-300 opacity-30" />
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-brand-50">
+                <Loader2 size={24} className="animate-spin text-brand-500" />
               </div>
             </div>
-            <p className="text-xs text-brand-600 font-medium">
-              Connecting to Med...
-            </p>
+            <p className="text-xs font-medium text-brand-600">Connecting to Med...</p>
           </div>
         )}
 
-        {/* Messages */}
         {(status === "connected" || status === "ended") &&
-          messages.map((msg) => {
-            if (msg.speaker === "system") {
+          messages.map((message) => {
+            if (message.speaker === "system") {
               return (
-                <div key={msg.id} className="flex justify-center">
-                  <span className="text-[9px] bg-slate-100 text-slate-500 px-2.5 py-0.5 rounded-full">
-                    {msg.text}
+                <div key={message.id} className="flex justify-center">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[9px] text-slate-500">
+                    {message.text}
                   </span>
                 </div>
               );
             }
-            const isAI = msg.speaker === "ai";
+
+            const isAI = message.speaker === "ai";
             return (
               <div
-                key={msg.id}
+                key={message.id}
                 className={`flex ${isAI ? "justify-start" : "justify-end"}`}
               >
                 <div
@@ -412,7 +336,7 @@ export default function FloatingCallWidget() {
                       : "bg-brand-600 text-white"
                   }`}
                 >
-                  <div className="flex items-center gap-1 mb-0.5">
+                  <div className="mb-0.5 flex items-center gap-1">
                     {isAI ? (
                       <Bot size={9} className="opacity-40" />
                     ) : (
@@ -421,11 +345,11 @@ export default function FloatingCallWidget() {
                     <span className="text-[9px] font-semibold opacity-40">
                       {isAI ? "Medistics AI" : "You"}
                     </span>
-                    <span className="text-[8px] opacity-25 ml-auto">
-                      {msg.time}
+                    <span className="ml-auto text-[8px] opacity-25">
+                      {message.time}
                     </span>
                   </div>
-                  <p className="text-[12px] leading-relaxed">{msg.text}</p>
+                  <p className="text-[12px] leading-relaxed">{message.text}</p>
                 </div>
               </div>
             );
@@ -433,33 +357,24 @@ export default function FloatingCallWidget() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ── Input (only when connected) ── */}
-      {status === "connected" && (
-        <div className="p-3 border-t border-brand-100 flex-shrink-0">
+      {status === "connected" && temporaryControlsEnabled && (
+        <div className="flex-shrink-0 border-t border-brand-100 p-3">
           <div className="flex gap-2">
             <input
               type="text"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSend();
+              onChange={(event) => setInputText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") handleSend();
               }}
-              placeholder={
-                micSupported
-                  ? "Or type here..."
-                  : "Type what the caller says..."
-              }
+              placeholder="Type message..."
               disabled={isBusy}
-              className="flex-1 text-xs px-3 py-2 rounded-xl border border-brand-100
-                         focus:border-brand-300 focus:ring-1 focus:ring-brand-200
-                         outline-none transition-all disabled:opacity-50
-                         placeholder:text-slate-400"
+              className="flex-1 rounded-xl border border-brand-100 px-3 py-2 text-xs outline-none transition-all placeholder:text-slate-400 focus:border-brand-300 focus:ring-1 focus:ring-brand-200 disabled:opacity-50"
             />
             <button
               onClick={handleSend}
               disabled={!inputText.trim() || isBusy}
-              className="bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300
-                         text-white px-3 rounded-xl transition-colors"
+              className="rounded-xl bg-brand-600 px-3 text-white transition-colors hover:bg-brand-700 disabled:bg-brand-300"
             >
               <Send size={13} />
             </button>
@@ -467,9 +382,8 @@ export default function FloatingCallWidget() {
         </div>
       )}
 
-      {/* ── Ended footer ── */}
       {status === "ended" && (
-        <div className="p-3 border-t border-brand-100 flex-shrink-0 space-y-2">
+        <div className="flex-shrink-0 space-y-2 border-t border-brand-100 p-3">
           <div className="flex gap-2">
             {callSessionId && (
               <button
@@ -478,8 +392,7 @@ export default function FloatingCallWidget() {
                   closeWidget();
                   navigate(`/calls/${callSessionId}`);
                 }}
-                className="flex-1 text-xs text-brand-600 hover:text-brand-700 font-semibold
-                           py-2.5 rounded-lg hover:bg-brand-50 transition-colors border border-brand-100"
+                className="flex-1 rounded-lg border border-brand-100 py-2.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700"
               >
                 View Call Details →
               </button>
@@ -489,8 +402,7 @@ export default function FloatingCallWidget() {
                 resetCall();
                 closeWidget();
               }}
-              className="flex-1 text-xs text-slate-600 hover:text-slate-800 font-medium
-                         py-2.5 rounded-lg hover:bg-slate-50 transition-colors border border-slate-100"
+              className="flex-1 rounded-lg border border-slate-100 py-2.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
             >
               Close
             </button>
@@ -500,9 +412,7 @@ export default function FloatingCallWidget() {
               resetCall();
               startCall();
             }}
-            className="w-full text-xs text-green-700 hover:text-green-800 font-semibold
-                       py-2.5 rounded-lg bg-green-50 hover:bg-green-100 transition-colors
-                       flex items-center justify-center gap-1.5"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-green-50 py-2.5 text-xs font-semibold text-green-700 transition-colors hover:bg-green-100 hover:text-green-800"
           >
             <Phone size={12} /> New Call
           </button>
