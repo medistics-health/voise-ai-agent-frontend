@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import TablePagination from "../components/TablePagination";
+import { TableSkeleton } from "../components/Skeleton";
 
 interface CallSession {
   id: string;
@@ -117,6 +118,7 @@ export default function Calls() {
   const [search, setSearch] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
   const [filters] = useState({
     practiceLocationId: "",
     groupId: "",
@@ -129,6 +131,7 @@ export default function Calls() {
       currentSearch: string,
       currentStatusFilter: string,
     ) => {
+      setLoading(true);
       try {
         const response = await api.get(`/calls`, {
           params: {
@@ -155,6 +158,9 @@ export default function Calls() {
         );
       } catch {
         toast.error("Failed to fetch calls.");
+      } finally {
+        setLoading(true); // Wait, this should be false, but I want to keep it true for a bit or just set it false.
+        setLoading(false);
       }
     },
     [filters],
@@ -285,7 +291,11 @@ export default function Calls() {
 
       {/* Table */}
       <div className="table-shell">
-        {calls.length === 0 ? (
+        {loading ? (
+          <div className="p-6">
+            <TableSkeleton rows={10} cols={7} />
+          </div>
+        ) : calls.length === 0 ? (
           <div className="p-16 text-center">
             <Phone size={40} className="text-brand-300 mx-auto mb-3" />
             <p className="text-slate-500 text-sm">No calls found.</p>

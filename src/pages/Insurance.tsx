@@ -9,6 +9,7 @@ import PageHeader from '../components/PageHeader'
 import TablePagination from '../components/TablePagination'
 import AddressInput from '../components/AddressInput'
 import { formatFullAddress } from '../lib/address'
+import { TableSkeleton } from '../components/Skeleton'
 
 interface Insurance {
   id: string
@@ -193,9 +194,14 @@ export default function Insurance() {
 
       <div className="table-shell">
         {loading ? (
-          <div className="p-16 flex justify-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
+          <div className="p-6">
+            <TableSkeleton rows={8} cols={7} />
+          </div>
         ) : insurances.length === 0 ? (
-          <div className="p-16 text-center"><Shield size={40} className="text-brand-300 mx-auto mb-3" /><p className="text-slate-500 text-sm">No insurances found.</p></div>
+          <div className="p-16 text-center">
+            <Shield size={40} className="text-brand-300 mx-auto mb-3" />
+            <p className="text-slate-500 text-sm">No insurances found.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">

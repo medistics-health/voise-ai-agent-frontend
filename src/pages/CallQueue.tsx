@@ -17,6 +17,7 @@ import PageHeader from '../components/PageHeader'
 import TablePagination from '../components/TablePagination'
 import AppModal from '../components/AppModal'
 import QueueCallListening from '../components/QueueCallListening'
+import { Skeleton, TableSkeleton } from '../components/Skeleton'
 
 type QueueStatus = 'active' | 'paused' | 'completed' | 'cancelled'
 type QueueItemStatus =
@@ -141,6 +142,7 @@ export default function CallQueue() {
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null)
   const [items, setItems] = useState<QueueItem[]>([])
   const [pagination, setPagination] = useState<Pagination>(defaultPagination)
+  const [queuePagination, setQueuePagination] = useState<Pagination>(defaultPagination)
   const [loadingQueues, setLoadingQueues] = useState(true)
   const [loadingItems, setLoadingItems] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
@@ -160,12 +162,16 @@ export default function CallQueue() {
   const activeQueues = queues.filter((queue) => queue.status === 'active').length
   const selectedQueuePending = items.filter((item) => item.status === 'pending').length
 
-  const fetchQueues = async (preserveSelection = true) => {
+  const fetchQueues = async (page = 1, preserveSelection = true) => {
     setLoadingQueues(true)
     try {
-      const res = await api.get('/call-queues')
-      const queueList: QueueSummary[] = Array.isArray(res.data?.data) ? res.data.data : []
+      const res = await api.get('/call-queues', { params: { page, limit: 10 } })
+      const queueList: QueueSummary[] = Array.isArray(res.data?.queues) ? res.data.queues : []
       setQueues(queueList)
+      
+      if (res.data?.pagination) {
+        setQueuePagination(res.data.pagination)
+      }
 
       if (queueList.length === 0) {
         setSelectedQueueId(null)
@@ -216,7 +222,7 @@ export default function CallQueue() {
   }
 
   useEffect(() => {
-    fetchQueues(false)
+    fetchQueues(1, false)
   }, [])
 
   useEffect(() => {
@@ -303,7 +309,7 @@ export default function CallQueue() {
       toast.success('Queue created')
       setCreateOpen(false)
       setCreateForm(defaultCreateForm)
-      await fetchQueues(false)
+      await fetchQueues(1, false)
       if (createdQueueId) {
         setSelectedQueueId(createdQueueId)
       }
@@ -323,7 +329,7 @@ export default function CallQueue() {
         action={
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => fetchQueues()}
+              onClick={() => fetchQueues(queuePagination.page)}
               className="btn-ghost inline-flex items-center gap-2"
             >
               <RefreshCw size={14} className={loadingQueues ? 'animate-spin' : ''} />
@@ -375,8 +381,14 @@ export default function CallQueue() {
           </div>
 
           {loadingQueues ? (
-            <div className="p-10 flex justify-center">
-              <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+            <div className="p-4 space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full" />
+                </div>
+              ))}
             </div>
           ) : queues.length === 0 ? (
             <div className="p-8 text-center text-slate-500">
@@ -440,6 +452,30 @@ export default function CallQueue() {
               })}
             </div>
           )}
+
+          {queuePagination.totalPages > 1 && (
+            <div className="p-4 border-t border-brand-100">
+               <div className="flex items-center justify-between gap-2">
+                 <button 
+                  disabled={queuePagination.page <= 1}
+                  onClick={() => fetchQueues(queuePagination.page - 1)}
+                  className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-500 disabled:opacity-30"
+                 >
+                   <RefreshCw size={14} className={queuePagination.page > 1 ? "rotate-180" : ""} />
+                 </button>
+                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                   Page {queuePagination.page} of {queuePagination.totalPages}
+                 </span>
+                 <button 
+                  disabled={queuePagination.page >= queuePagination.totalPages}
+                  onClick={() => fetchQueues(queuePagination.page + 1)}
+                  className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-500 disabled:opacity-30"
+                 >
+                   <RefreshCw size={14} />
+                 </button>
+               </div>
+            </div>
+          )}
         </section>
 
         <section className="glass-card overflow-hidden">
@@ -497,8 +533,8 @@ export default function CallQueue() {
               <p className="font-medium">No queue selected.</p>
             </div>
           ) : loadingItems ? (
-            <div className="p-10 flex justify-center">
-              <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+            <div className="p-6">
+              <TableSkeleton rows={8} cols={5} />
             </div>
           ) : items.length === 0 ? (
             <div className="p-10 text-center text-slate-500">

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import api from "../lib/api";
 import PageHeader from "../components/PageHeader";
+import { DashboardSkeleton } from "../components/Skeleton";
 
 type ServiceState = "online" | "offline";
 
@@ -44,6 +45,7 @@ interface DashboardStats {
     backend?: { status: ServiceState };
     voiceAgent?: { status: ServiceState };
     deepgram?: { status: ServiceState };
+    telnyx?: { status: ServiceState; error?: string };
     queueProcessor?: { running?: boolean };
   };
 }
@@ -128,12 +130,22 @@ export default function Dashboard() {
         .padStart(2, "0")}`
     : "0:00";
 
+  if (loading && !stats) {
+    return (
+      <div className="p-6">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
   const patientStats = stats?.patientStats;
   const queueStats = stats?.queueStats;
   const serviceStatus = stats?.serviceStatus;
   const backendState = serviceStatus?.backend?.status || "offline";
   const voiceState = serviceStatus?.voiceAgent?.status || "offline";
   const deepgramState = serviceStatus?.deepgram?.status || "offline";
+  const telnyxState = serviceStatus?.telnyx?.status || "offline";
+  const telnyxError = serviceStatus?.telnyx?.error;
   const queueProcessorState = serviceStatus?.queueProcessor?.running
     ? "online"
     : "offline";
@@ -177,8 +189,15 @@ export default function Dashboard() {
               <HealthPill label="Backend API" state={backendState} />
               <HealthPill label="Voice Agent" state={voiceState} />
               <HealthPill label="Deepgram" state={deepgramState} />
+              <HealthPill label="Calling Service" state={telnyxState} />
               <HealthPill label="Queue Engine" state={queueProcessorState} />
             </div>
+
+            {telnyxError && (
+              <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-[11px] font-medium text-rose-700">
+                <span className="font-bold uppercase tracking-wider">Calling Service Issue:</span> {telnyxError}
+              </div>
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">

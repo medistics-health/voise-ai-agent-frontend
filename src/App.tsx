@@ -49,7 +49,7 @@ export default function App() {
               <Route path="/results" element={<Results />} />
               <Route path="/results/:jobId" element={<Results />} />
               <Route path="/coverage" element={<Coverage />} />
-              <Route path="/voice-call-center" element={<TestCall />} />
+              <Route path="/active-call-center" element={<TestCall />} />
               {/* ── NEW Phase 2 routes ── */}
               <Route path="/calls" element={<Calls />} />
               <Route path="/calls/:id" element={<CallDetail />} />

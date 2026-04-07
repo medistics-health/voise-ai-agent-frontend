@@ -31,15 +31,18 @@
   }
 
   ::-webkit-scrollbar {
-    width: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #e9f0ff;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #91b2ff;
-    border-radius: 9999px;
-  }
+  width: 6px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #91b2ff;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 }
 
 @layer components {
@@ -151,5 +154,21 @@
     50% {
       height: var(--bar-h, 30px);
     }
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      @apply bg-slate-100;
+    }
+    50% {
+      @apply bg-slate-200/80;
+    }
+    100% {
+      @apply bg-slate-100;
+    }
+  }
+
+  .skeleton {
+    @apply animate-[skeleton-shimmer_2s_infinite_ease-in-out] rounded-lg;
   }
 }

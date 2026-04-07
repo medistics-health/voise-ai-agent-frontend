@@ -82,7 +82,7 @@ export default function Layout() {
             { to: "/call-queue", icon: ListOrdered, label: "Queue Management" },
             { to: "/results", icon: ClipboardList, label: "Results" },
             { to: "/coverage", icon: ShieldCheck, label: "Coverage" },
-            { to: "/voice-call-center", icon: Headphones, label: "Voice Call Center" },
+            { to: "/active-call-center", icon: Headphones, label: "Active Call Center" },
             { to: "/calls", icon: Phone, label: "Call Log" },
             { to: "/appointments", icon: Calendar, label: "Appointments" },
             { to: "/faq", icon: HelpCircle, label: "FAQ Manager" },

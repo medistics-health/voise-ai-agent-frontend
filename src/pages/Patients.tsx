@@ -18,6 +18,7 @@ import PageHeader from "../components/PageHeader";
 import TablePagination from "../components/TablePagination";
 import AddressInput from "../components/AddressInput";
 import { useCall } from "../contexts/CallContext";
+import { TableSkeleton } from "../components/Skeleton";
 
 interface Patient {
   id: string;
@@ -702,8 +703,8 @@ export default function Patients() {
 
       <section className="space-y-4">
         {loading ? (
-          <div className="glass-card p-16 flex justify-center">
-            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          <div className="p-2">
+            <TableSkeleton rows={10} cols={8} />
           </div>
         ) : patients.length === 0 ? (
           <div className="glass-card p-16 text-center">

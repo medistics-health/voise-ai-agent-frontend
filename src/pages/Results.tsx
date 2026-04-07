@@ -13,6 +13,7 @@ import {
   User,
   ShieldCheck,
 } from 'lucide-react'
+import { Skeleton, TableSkeleton } from '../components/Skeleton'
 
 interface Job {
   id: string
@@ -108,8 +109,8 @@ function JobList() {
 
       <div className="table-shell">
         {loading ? (
-          <div className="p-16 flex justify-center">
-            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          <div className="p-6">
+            <TableSkeleton rows={8} cols={7} />
           </div>
         ) : jobs.length === 0 ? (
           <div className="p-16 text-center">
@@ -249,7 +250,15 @@ function JobDetail({ jobId }: { jobId: string }) {
   const statuses = ['ALL', 'ELIGIBLE', 'NOT_ELIGIBLE', 'ERROR', 'PENDING', 'RUNNING']
 
   if (loading && !job) {
-    return <div className="p-8 flex justify-center items-center h-64"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
+    return (
+      <div className="p-8 space-y-6">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-48 w-full rounded-2xl" />
+        <div className="glass-card p-6">
+          <TableSkeleton rows={10} cols={5} />
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { AlertCircle, RotateCcw, Settings } from 'lucide-react'
 import api from '../lib/api'
 import PageHeader from '../components/PageHeader'
+import { Skeleton } from '../components/Skeleton'
 
 interface SettingField {
   key: string
@@ -129,8 +130,13 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex justify-center">
-        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div className="p-8 space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <div className="grid gap-6 lg:grid-cols-[250px,1fr]">
+          <Skeleton className="h-64 rounded-2xl" />
+          <Skeleton className="h-96 rounded-2xl" />
+        </div>
       </div>
     )
   }

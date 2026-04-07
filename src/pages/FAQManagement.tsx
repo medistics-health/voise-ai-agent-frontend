@@ -14,6 +14,7 @@ import {
 import AppModal from "../components/AppModal";
 import PageHeader from "../components/PageHeader";
 import TablePagination from "../components/TablePagination";
+import { TableSkeleton } from "../components/Skeleton";
 
 interface FAQ {
   id: string;
@@ -221,8 +222,8 @@ export default function FAQManagement() {
 
       <div className="table-shell">
         {loading ? (
-          <div className="p-16 flex justify-center">
-            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          <div className="p-6">
+            <TableSkeleton rows={10} cols={5} />
           </div>
         ) : faqs.length === 0 ? (
           <div className="p-16 text-center">

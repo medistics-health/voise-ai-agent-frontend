@@ -33,9 +33,9 @@ export interface ActiveCall {
   roomName: string;
   callSessionId: string;
   callerNumber: string | null;
-  mode: "room" | "test";
+  mode: "room" | "test" | "telnyx";
   source: CallSource;
-  state: string;
+  state: "dialing" | "ringing" | "connected" | string;
   startTime: string;
   patientName: string | null;
   identityVerified: boolean;
@@ -336,7 +336,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
 
     roomNameRef.current = "";
-    toast.success("Call ended");
   }, [addMessage, cleanupCallResources]);
 
   const sendToAgent = useCallback(
@@ -420,10 +419,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          if (data.type === "call:started") {
+          if (data.type === "call:started" || data.type === "call:dialing" || data.type === "call:ringing") {
             setActiveCalls((prev) => {
-              if (prev.find((call) => call.roomName === data.roomName)) {
-                return prev;
+              const existing = prev.find((call) => call.roomName === data.roomName);
+              const newState = data.data?.newState || data.data?.state || (data.type === "call:dialing" ? "dialing" : data.type === "call:ringing" ? "ringing" : "greeting");
+              
+              if (existing) {
+                return prev.map(c => c.roomName === data.roomName ? { ...c, state: newState } : c);
               }
 
               return [
@@ -434,7 +436,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
                   callerNumber: data.data?.callerNumber || null,
                   mode: data.data?.mode || "room",
                   source: data.data?.source || "voice_center",
-                  state: data.data?.state || "greeting",
+                  state: newState,
                   startTime: data.timestamp,
                   patientName: data.data?.patientName || null,
                   identityVerified: data.data?.identityVerified || false,
@@ -444,6 +446,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
                 },
               ];
             });
+            return;
+          }
+
+          if (data.type === "call:audio") {
+            const event = new CustomEvent(`call-audio-${data.roomName}`, {
+              detail: data.data,
+            });
+            window.dispatchEvent(event);
             return;
           }
 
@@ -461,7 +471,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
               statusRef.current = "ended";
               addMessage("system", "Call ended");
               roomNameRef.current = "";
-              toast.success("Call ended");
             }
             return;
           }
@@ -635,6 +644,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
         setCallSessionId(data.callSessionId);
         roomNameRef.current = data.roomName;
 
+        // Add a local placeholder for instant responsiveness
+        setActiveCalls((prev) => [
+          ...prev.filter(c => c.roomName !== data.roomName),
+          {
+            roomName: data.roomName,
+            callSessionId: data.callSessionId,
+            callerNumber: patientMeta?.insurancePhone || null,
+            mode: source === 'test_call' ? 'test' : 'telnyx',
+            source: source,
+            state: 'connecting',
+            startTime: new Date().toISOString(),
+            patientName: patientMeta?.name || null,
+            identityVerified: source === 'patient_list' || source === 'queue_system',
+            intent: null,
+            lastTranscript: null,
+            transcriptCount: 0,
+          }
+        ]);
+
         setStatus("connected");
         statusRef.current = "connected";
 
@@ -664,7 +692,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
           addMessage("ai", data.initialGreeting);
           await playTTS(data.initialGreeting);
         }
-        toast.success("Call connected!");
       } catch (err: any) {
         toast.error(err.message || "Failed to start");
         cleanupCallResources();
