@@ -37,34 +37,6 @@ const sections: SettingSection[] = [
     ],
   },
   {
-    id: 'livekit',
-    title: 'LiveKit Server',
-    description: 'Realtime transport and room settings for voice sessions.',
-    fields: [
-      { key: 'livekit.url', label: 'Server URL', placeholder: 'http://localhost:7880' },
-      { key: 'livekit.wsUrl', label: 'WebSocket URL', placeholder: 'ws://localhost:7880' },
-      { key: 'livekit.apiKey', label: 'API Key', type: 'password' },
-      { key: 'livekit.apiSecret', label: 'API Secret', type: 'password' },
-    ],
-  },
-  {
-    id: 'deepgram',
-    title: 'Deepgram',
-    description: 'Speech-to-text and text-to-speech settings.',
-    fields: [
-      { key: 'deepgram.apiKey', label: 'API Key', type: 'password' },
-      { key: 'deepgram.voiceModel', label: 'Voice Model', placeholder: 'aura-luna-en' },
-    ],
-  },
-  {
-    id: 'voice-agent',
-    title: 'Voice Agent',
-    description: 'Voice agent backend endpoint and related connectivity.',
-    fields: [
-      { key: 'voiceAgent.url', label: 'Backend URL', placeholder: 'http://localhost:4100' },
-    ],
-  },
-  {
     id: 'agent',
     title: 'Agent Config',
     description: 'Core runtime behavior for response timing and verification.',
@@ -212,31 +184,29 @@ export default function SettingsPage() {
           </div>
 
           <div className="p-6">
-            {activeSection.id === 'agent' || activeSection.id === 'queue' ? (
-              <div className="space-y-5">
-                {activeSection.fields.map((field) => (
-                  <div key={field.key}>
-                    <label className="label">{field.label}</label>
-                    {field.type === 'textarea' ? (
-                      <textarea
-                        className="input-field min-h-[96px]"
-                        value={settings[field.key] ?? ''}
-                        onChange={(event) => handleChange(field.key, event.target.value)}
-                        placeholder={field.placeholder}
-                      />
-                    ) : (
-                      <input
-                        type={field.type ?? 'text'}
-                        className="input-field"
-                        value={settings[field.key] ?? ''}
-                        onChange={(event) => handleChange(field.key, event.target.value)}
-                        placeholder={field.placeholder}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : null}
+            <div className="space-y-5">
+              {activeSection.fields.map((field) => (
+                <div key={field.key}>
+                  <label className="label">{field.label}</label>
+                  {field.type === 'textarea' ? (
+                    <textarea
+                      className="input-field min-h-[96px]"
+                      value={settings[field.key] ?? ''}
+                      onChange={(event) => handleChange(field.key, event.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  ) : (
+                    <input
+                      type={field.type ?? 'text'}
+                      className="input-field"
+                      value={settings[field.key] ?? ''}
+                      onChange={(event) => handleChange(field.key, event.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">

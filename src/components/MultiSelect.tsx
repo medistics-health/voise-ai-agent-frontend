@@ -31,7 +31,6 @@ export default function MultiSelect({
   placeholder = 'Select items...',
   disabled = false,
   className = '',
-  filters = {},
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')

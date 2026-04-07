@@ -103,7 +103,7 @@ export default function QueueCallListening({
       
       if (audioRef.current) {
         // Store current playback time if already playing
-        const currentTime = audioRef.current.currentTime || 0
+        // (Removed unused currentTime variable)
         
         audioRef.current.src = blobUrl
         audioRef.current.play().catch((err) => {

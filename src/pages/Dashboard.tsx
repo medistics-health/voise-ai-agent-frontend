@@ -43,7 +43,6 @@ interface DashboardStats {
   serviceStatus?: {
     backend?: { status: ServiceState };
     voiceAgent?: { status: ServiceState };
-    livekit?: { status: ServiceState };
     deepgram?: { status: ServiceState };
     queueProcessor?: { running?: boolean };
   };
@@ -134,7 +133,6 @@ export default function Dashboard() {
   const serviceStatus = stats?.serviceStatus;
   const backendState = serviceStatus?.backend?.status || "offline";
   const voiceState = serviceStatus?.voiceAgent?.status || "offline";
-  const livekitState = serviceStatus?.livekit?.status || "offline";
   const deepgramState = serviceStatus?.deepgram?.status || "offline";
   const queueProcessorState = serviceStatus?.queueProcessor?.running
     ? "online"
@@ -178,7 +176,6 @@ export default function Dashboard() {
             <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
               <HealthPill label="Backend API" state={backendState} />
               <HealthPill label="Voice Agent" state={voiceState} />
-              <HealthPill label="LiveKit" state={livekitState} />
               <HealthPill label="Deepgram" state={deepgramState} />
               <HealthPill label="Queue Engine" state={queueProcessorState} />
             </div>
