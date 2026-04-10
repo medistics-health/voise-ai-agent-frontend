@@ -26,7 +26,7 @@ export default function FloatingCallWidget() {
       >
         <div className="relative group">
           {/* Pulsing Background */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 to-emerald-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+          <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 to-emerald-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
           
           <div className="relative flex items-center gap-4 bg-white/90 backdrop-blur-md border border-brand-100 p-4 rounded-2xl shadow-xl shadow-brand-500/10 min-w-[320px]">
             {/* Call Icon / Animation */}
@@ -46,9 +46,9 @@ export default function FloatingCallWidget() {
                   <Phone size={22} fill="currentColor" />
                 </motion.div>
               </div>
-              <motion.div
+                <motion.div
                 initial={{ scale: 0 }}
-                animate={{ scale: [1, 2], opacity: [0.5, 0] }}
+                animate={currentCall.state === 'active' || currentCall.state === 'connecting' ? { scale: [1, 2], opacity: [0.5, 0] } : { scale: 0 }}
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="absolute inset-0 rounded-full bg-brand-400 -z-10"
               />
@@ -57,8 +57,8 @@ export default function FloatingCallWidget() {
             {/* Content */}
             <div className="flex-1 overflow-hidden">
               <div className="flex items-center gap-2">
-                <span className={`flex h-2 w-2 rounded-full animate-pulse ${
-                  currentCall.state === 'ringing' || currentCall.state === 'dialing' ? 'bg-amber-500' : 'bg-emerald-500'
+                <span className={`flex h-2 w-2 rounded-full ${
+                  currentCall.state === 'ringing' || currentCall.state === 'dialing' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
                 }`} />
                 <p className={`text-[10px] font-bold uppercase tracking-wider ${
                   currentCall.state === 'ringing' || currentCall.state === 'dialing' ? 'text-amber-600' : 'text-emerald-600'

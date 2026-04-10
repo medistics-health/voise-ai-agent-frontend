@@ -17,7 +17,7 @@ import Coverage from "./pages/Coverage";
 import Calls from "./pages/Calls";
 import CallDetail from "./pages/CallDetail";
 import FAQManagement from "./pages/FAQManagement";
-import TestCall from "./pages/TestCall";
+import ActiveCallCenter from "./pages/ActiveCallCenter";
 import Appointments from "./pages/Appointments";
 import { CallProvider } from "./contexts/CallContext";
 import FloatingCallWidget from "./components/FloatingCallWidget";
@@ -49,7 +49,7 @@ export default function App() {
               <Route path="/results" element={<Results />} />
               <Route path="/results/:jobId" element={<Results />} />
               <Route path="/coverage" element={<Coverage />} />
-              <Route path="/active-call-center" element={<TestCall />} />
+              <Route path="/active-call-center" element={<ActiveCallCenter />} />
               {/* ── NEW Phase 2 routes ── */}
               <Route path="/calls" element={<Calls />} />
               <Route path="/calls/:id" element={<CallDetail />} />

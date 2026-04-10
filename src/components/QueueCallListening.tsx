@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Volume2, X, Headphones, Play, Pause } from 'lucide-react'
+import { WavStreamPlayer } from '../lib/wavStreamPlayer'
 
 interface QueueCallListeningProps {
   queueItemId: string
@@ -17,64 +18,71 @@ export default function QueueCallListening({
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState<Array<{ speaker: string; text: string }>>([])
   const [callStatus, setCallStatus] = useState('connecting')
-  const [isPlaying, setIsPlaying] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(true)
   const [hasAudio, setHasAudio] = useState(false)
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const audioChunksRef = useRef<Uint8Array[]>([])
+  const [activeRoomName, setActiveRoomName] = useState<string | null>(null)
+  const audioPlayerRef = useRef<WavStreamPlayer | null>(null)
+  const activeRoomNameRef = useRef<string | null>(null)
+  const isPlayingRef = useRef(true)
 
   useEffect(() => {
-    // Connect to voice agent SSE for real-time call updates
+    activeRoomNameRef.current = activeRoomName
+  }, [activeRoomName])
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying
+  }, [isPlaying])
+
+  useEffect(() => {
+    audioPlayerRef.current = new WavStreamPlayer()
+
     const voiceAgentUrl = localStorage.getItem('voiceAgentUrl') || 'http://localhost:4100'
     const es = new EventSource(`${voiceAgentUrl}/agent/events`)
 
     es.onopen = () => {
-      console.log('Connected to voice agent events')
       setIsListening(true)
-      setCallStatus('connected')
+      setCallStatus((current) => (current === 'waiting' ? current : 'connected'))
     }
 
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        
-        // Handle initial state
+
         if (data.type === 'init' && data.calls) {
-          // Check if our queue item's call is active
-          const activeCall = data.calls.find((call: any) => 
-            call.metadata?.queueItemId === queueItemId
-          )
-          if (!activeCall) {
+          const activeCall = data.calls.find((call: any) => call.metadata?.queueItemId === queueItemId)
+          if (activeCall?.roomName) {
+            setActiveRoomName(activeCall.roomName)
+            setCallStatus('connected')
+          } else {
             setCallStatus('waiting')
           }
-        }
-        
-        // Handle call events
-        if (data.type === 'call:transcript' && data.roomName) {
-          if (data.data?.speaker && data.data?.text) {
-            setTranscript((prev) => [...prev, { speaker: data.data.speaker, text: data.data.text }])
-          }
+          return
         }
 
-        // Handle audio events - accumulate and auto-play
-        if (data.type === 'call:audio' && data.data?.audioBase64) {
-          try {
-            // Decode base64 audio and append to chunks
-            const binaryString = atob(data.data.audioBase64)
-            const bytes = new Uint8Array(binaryString.length)
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i)
-            }
-            audioChunksRef.current.push(bytes)
-            setHasAudio(true)
-            console.log(`Audio chunk received (total: ${audioChunksRef.current.length} chunks, size: ${bytes.length} bytes)`)
-            
-            // Auto-play new audio chunk in real-time
-            playAudioChunk(bytes)
-          } catch (audioErr) {
-            console.error('Failed to process audio chunk:', audioErr)
-          }
+        if (!activeRoomNameRef.current && data.data?.patientName === patientName && data.roomName) {
+          setActiveRoomName(data.roomName)
+          setCallStatus('connected')
         }
-        
+
+        if (activeRoomNameRef.current && data.roomName !== activeRoomNameRef.current) {
+          return
+        }
+
+        if (data.type === 'call:transcript' && data.data?.speaker && data.data?.text) {
+          setTranscript((prev) => [...prev, { speaker: data.data.speaker, text: data.data.text }])
+          return
+        }
+
+        if (data.type === 'call:audio' && data.data?.audioBase64) {
+          setHasAudio(true)
+          if (isPlayingRef.current) {
+            audioPlayerRef.current?.enqueueBase64Wav(data.data.audioBase64).catch((audioErr) => {
+              console.error('Failed to process audio chunk:', audioErr)
+            })
+          }
+          return
+        }
+
         if (data.type === 'call:ended') {
           setCallStatus('completed')
         }
@@ -84,7 +92,6 @@ export default function QueueCallListening({
     }
 
     es.onerror = () => {
-      console.error('Voice agent connection error')
       setIsListening(false)
       setCallStatus('disconnected')
       es.close()
@@ -92,41 +99,25 @@ export default function QueueCallListening({
 
     return () => {
       es.close()
+      audioPlayerRef.current?.close().catch(() => {})
+      audioPlayerRef.current = null
     }
-  }, [queueItemId])
-
-  // Play individual audio chunk in real-time
-  const playAudioChunk = (audioBytes: any) => {
-    try {
-      const audioBlob = new Blob([audioBytes], { type: 'audio/wav' })
-      const blobUrl = URL.createObjectURL(audioBlob)
-      
-      if (audioRef.current) {
-        // Store current playback time if already playing
-        // (Removed unused currentTime variable)
-        
-        audioRef.current.src = blobUrl
-        audioRef.current.play().catch((err) => {
-          console.error('Failed to play audio chunk:', err)
-        })
-      }
-    } catch (err) {
-      console.error('Error creating audio blob:', err)
-    }
-  }
+  }, [patientName, queueItemId])
 
   const toggleAudio = () => {
     if (isPlaying) {
-      audioRef.current?.pause()
-      setIsPlaying(false)
-      console.log('⏸️ Audio paused')
-    } else {
-      audioRef.current?.play().catch((err) => {
-        console.error('Failed to resume audio:', err)
+      audioPlayerRef.current?.suspend().catch((err) => {
+        console.error('Failed to pause audio:', err)
       })
-      setIsPlaying(true)
-      console.log('▶️ Audio playing')
+      setIsPlaying(false)
+      return
     }
+
+    audioPlayerRef.current?.resume().then(() => {
+      setIsPlaying(true)
+    }).catch((err) => {
+      console.error('Failed to resume audio:', err)
+    })
   }
 
   const getStatusColor = () => {
@@ -147,7 +138,6 @@ export default function QueueCallListening({
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-brand-50 to-blue-50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-brand-100 flex items-center justify-center">
@@ -167,7 +157,6 @@ export default function QueueCallListening({
           </button>
         </div>
 
-        {/* Status Bar */}
         <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div
@@ -188,16 +177,8 @@ export default function QueueCallListening({
               {callStatus === 'connecting' && 'Connecting...'}
             </span>
           </div>
-          
-          {/* Audio Player */}
+
           <div className="flex items-center gap-2">
-            <audio
-              ref={audioRef}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onEnded={() => setIsPlaying(false)}
-              className="hidden"
-            />
             {hasAudio && (
               <div className="text-xs font-medium text-emerald-600 px-2 py-1 bg-emerald-50 rounded">
                 Audio Live
@@ -220,7 +201,6 @@ export default function QueueCallListening({
           </div>
         </div>
 
-        {/* Transcript Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-slate-50">
           {transcript.length === 0 ? (
             <div className="h-full flex items-center justify-center text-center text-slate-500">
@@ -264,7 +244,6 @@ export default function QueueCallListening({
           )}
         </div>
 
-        {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex gap-3">
           <button
             onClick={onClose}

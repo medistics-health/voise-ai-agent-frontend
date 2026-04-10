@@ -131,7 +131,6 @@ export default function Calls() {
       currentSearch: string,
       currentStatusFilter: string,
     ) => {
-      setLoading(true);
       try {
         const response = await api.get(`/calls`, {
           params: {
@@ -392,7 +391,7 @@ export default function Calls() {
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
-                          {call.metadata?.insurancePhone && (
+                          {/* {call.metadata?.insurancePhone && (
                             <button
                               className="btn-ghost px-2 py-1.5 text-xs inline-flex items-center gap-1 text-green-600 hover:bg-green-50"
                               onClick={(e) => {
@@ -406,7 +405,7 @@ export default function Calls() {
                             >
                               <Phone size={12} /> Call
                             </button>
-                          )}
+                          )} */}
                           <button className="btn-ghost px-2 py-1.5 text-xs inline-flex items-center gap-1">
                             View <ArrowRight size={12} />
                           </button>

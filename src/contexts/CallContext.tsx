@@ -13,7 +13,7 @@ const AGENT_URL = "http://localhost:4100";
 
 type CallStatus = "idle" | "connecting" | "connected" | "ended";
 type SpeakingState = "idle" | "user" | "ai" | "processing";
-type CallSource = "test_call" | "voice_center" | "patient_list" | "queue_system";
+type CallSource = "test_call" | "voice_center" | "patient_list" | "queue_system" | "telnyx_call";
 
 export interface Message {
   id: string;
@@ -35,6 +35,9 @@ export interface ActiveCall {
   callerNumber: string | null;
   mode: "room" | "test" | "telnyx";
   source: CallSource;
+  metadata?: {
+    queueItemId?: string | null;
+  };
   state: "dialing" | "ringing" | "connected" | string;
   startTime: string;
   patientName: string | null;
@@ -436,6 +439,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
                   callerNumber: data.data?.callerNumber || null,
                   mode: data.data?.mode || "room",
                   source: data.data?.source || "voice_center",
+                  metadata: data.data?.metadata,
                   state: newState,
                   startTime: data.timestamp,
                   patientName: data.data?.patientName || null,
@@ -653,6 +657,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
             callerNumber: patientMeta?.insurancePhone || null,
             mode: source === 'test_call' ? 'test' : 'telnyx',
             source: source,
+            metadata: {
+              queueItemId: patientMeta?.queueItemId || null,
+            },
             state: 'connecting',
             startTime: new Date().toISOString(),
             patientName: patientMeta?.name || null,

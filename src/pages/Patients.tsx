@@ -5,7 +5,6 @@ import {
   CheckSquare,
   CalendarRange,
   Pencil,
-  Phone,
   PlusCircle,
   RefreshCw,
   Save,
@@ -17,7 +16,6 @@ import AppModal from "../components/AppModal";
 import PageHeader from "../components/PageHeader";
 import TablePagination from "../components/TablePagination";
 import AddressInput from "../components/AddressInput";
-import { useCall } from "../contexts/CallContext";
 import { TableSkeleton } from "../components/Skeleton";
 
 interface Patient {
@@ -46,7 +44,13 @@ interface Patient {
   memberPlanStatusUpdatedAt?: string | null;
   provider?: { id: string; name: string; npi: string } | null;
   practiceLocation?: { id: string; name: string; npi: string } | null;
-  group?: { id: string; name: string; category: string } | null;
+  group?: {
+    id: string;
+    name: string;
+    category: string;
+    npi?: string | null;
+    ein?: string | null;
+  } | null;
   insurance?: { id: string; name: string; phone?: string | null } | null;
 }
 interface PatientFormValues {
@@ -209,30 +213,7 @@ const addressText = (patient: Patient) =>
     .filter(Boolean)
     .join(" ");
 
-const buildPatientLookupData = (patient: Patient) => ({
-  id: patient.id,
-  firstName: patient.firstName,
-  lastName: patient.lastName,
-  middleName: patient.middleName || null,
-  dob: patient.dob,
-  gender: patient.gender || null,
-  email: patient.email || null,
-  mobileNumber: patient.mobileNumber || null,
-  addressLine1: patient.addressLine1 || null,
-  addressLine2: patient.addressLine2 || null,
-  city: patient.city || null,
-  state: patient.state || null,
-  zip: patient.zip || null,
-  payerMemberId: patient.payerMemberId || null,
-  memberPlanStatus: patient.memberPlanStatus || null,
-  memberPlanStatusUpdatedAt: patient.memberPlanStatusUpdatedAt || null,
-  provider: patient.provider || null,
-  practiceLocation: patient.practiceLocation || null,
-  insurance: patient.insurance || null,
-});
-
 export default function Patients() {
-  const { startCall, status: callStatus } = useCall();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [pagination, setPagination] = useState<Pagination>(defaultPagination);
   const [search, setSearch] = useState("");
@@ -858,7 +839,7 @@ export default function Patients() {
                           >
                             <PlusCircle size={14} />
                           </button>
-                          <button
+                          {/* <button
                             type="button"
                             onClick={() =>
                               startCall({
@@ -884,7 +865,7 @@ export default function Patients() {
                             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <Phone size={14} />
-                          </button>
+                          </button> */}
                           <button
                             type="button"
                             onClick={() => openEditModal(patient)}

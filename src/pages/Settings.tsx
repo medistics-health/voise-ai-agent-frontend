@@ -21,30 +21,15 @@ interface SettingSection {
 
 const sections: SettingSection[] = [
   {
-    id: 'practice',
-    title: 'Practice Info',
-    description: 'Practice details used in greetings and system displays.',
-    fields: [
-      { key: 'practice.name', label: 'Practice Name', placeholder: 'Medical Practice' },
-      { key: 'practice.hours', label: 'Practice Hours', placeholder: 'Mon-Fri 9am-5pm' },
-      { key: 'practice.address', label: 'Address', type: 'textarea', placeholder: '123 Main St, New York, NY' },
-      { key: 'practice.phone', label: 'Phone', placeholder: '+1 555 555 5555' },
-      {
-        key: 'practice.greeting',
-        label: 'Agent Greeting',
-        type: 'textarea',
-        placeholder: 'Hello from {practiceName}. How can I help you today?',
-      },
-    ],
-  },
-  {
     id: 'agent',
     title: 'Agent Config',
-    description: 'Core runtime behavior for response timing and verification.',
+    description: 'Core runtime behavior for conversational handling.',
     fields: [
+      { key: 'agent.callMaxDurationLimitMinutes', label: 'Call Max Duration Limit (Minutes)', type: 'number', placeholder: '2' },
+      { key: 'agent.uiWaitTime', label: 'UI Wait Time For Caller Speak (Seconds)', type: 'number', placeholder: '3' },
+      { key: 'agent.dialingPressMsg', label: 'Dialing Press Msg (DTMF)', type: 'text', placeholder: 'e.g. 1' },
       { key: 'agent.responseTimeoutMs', label: 'Response Timeout (ms)', type: 'number', placeholder: '8000' },
       { key: 'agent.maxSilenceMs', label: 'Max Silence (ms)', type: 'number', placeholder: '120000' },
-      { key: 'agent.maxCallDurationMs', label: 'Max Call Duration (ms)', type: 'number', placeholder: '0' },
       { key: 'agent.maxVerificationAttempts', label: 'Max Verification Attempts', type: 'number', placeholder: '3' },
     ],
   },
