@@ -18,12 +18,12 @@ export default function QueueCallListening({
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState<Array<{ speaker: string; text: string }>>([])
   const [callStatus, setCallStatus] = useState('connecting')
-  const [isPlaying, setIsPlaying] = useState(true)
+  const [isPlaying, setIsPlaying] = useState(false)
   const [hasAudio, setHasAudio] = useState(false)
   const [activeRoomName, setActiveRoomName] = useState<string | null>(null)
   const audioPlayerRef = useRef<WavStreamPlayer | null>(null)
   const activeRoomNameRef = useRef<string | null>(null)
-  const isPlayingRef = useRef(true)
+  const isPlayingRef = useRef(false)
 
   useEffect(() => {
     activeRoomNameRef.current = activeRoomName

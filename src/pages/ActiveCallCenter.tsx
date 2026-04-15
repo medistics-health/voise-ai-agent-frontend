@@ -105,7 +105,7 @@ function ActiveCallCard({
 }) {
   const navigate = useNavigate();
   const duration = useLiveDuration(call.startTime);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const audioPlayerRef = useRef<WavStreamPlayer | null>(null);
   const [isAudioActive, setIsAudioActive] = useState(false);
 
