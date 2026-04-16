@@ -13,6 +13,7 @@ import {
   XCircle,
   ArrowRight,
   BarChart3,
+  Volume2
 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import TablePagination from "../components/TablePagination";
@@ -29,6 +30,7 @@ interface CallSession {
   duration: number | null;
   startedAt: string;
   endedAt: string | null;
+  recordingUrl: string | null;
   metadata?: {
     insuranceCompany?: string;
     insurancePhone?: string;
@@ -158,7 +160,6 @@ export default function Calls() {
       } catch {
         toast.error("Failed to fetch calls.");
       } finally {
-        setLoading(true); // Wait, this should be false, but I want to keep it true for a bit or just set it false.
         setLoading(false);
       }
     },
@@ -391,21 +392,15 @@ export default function Calls() {
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
-                          {/* {call.metadata?.insurancePhone && (
-                            <button
-                              className="btn-ghost px-2 py-1.5 text-xs inline-flex items-center gap-1 text-green-600 hover:bg-green-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // TODO: Implement direct call to insurance
-                                toast.success(
-                                  `Call ${call.metadata?.insuranceCompany || "insurance"}: ${call.metadata?.insurancePhone}`
-                                );
-                              }}
-                              title={`Call ${call.metadata?.insuranceCompany}: ${call.metadata?.insurancePhone}`}
+                           {call.recordingUrl && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); navigate(`/calls/${call.id}`); }} 
+                              className="btn-ghost p-1.5 text-brand-600"
+                              title="Listen to recording"
                             >
-                              <Phone size={12} /> Call
+                              <Volume2 size={16} />
                             </button>
-                          )} */}
+                          )}
                           <button className="btn-ghost px-2 py-1.5 text-xs inline-flex items-center gap-1">
                             View <ArrowRight size={12} />
                           </button>

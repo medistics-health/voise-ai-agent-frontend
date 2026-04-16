@@ -10,6 +10,7 @@ import {
   Save,
   Search,
   Users,
+  Mic,
 } from "lucide-react";
 import api from "../lib/api";
 import AppModal from "../components/AppModal";
@@ -235,6 +236,13 @@ export default function Patients() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [insurances, setInsurances] = useState<Insurance[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Recording Modal State
+  const [recordingsModalOpen, setRecordingsModalOpen] = useState(false);
+  const [loadingRecordings, setLoadingRecordings] = useState(false);
+  const [patientRecordings, setPatientRecordings] = useState<any[]>([]);
+  const [activePatientName, setActivePatientName] = useState("");
+
   const {
     register,
     handleSubmit,
@@ -243,10 +251,6 @@ export default function Patients() {
     watch,
   } = useForm<PatientFormValues>({ defaultValues });
 
-  /* ──────────────────────────────────────────────
-   * FIX 1: fetchPatients now accepts search param
-   *         and passes ALL filter fields to the API
-   * ────────────────────────────────────────────── */
   const fetchPatients = useCallback(
     async (page: number, currentFilters: Filters, currentSearch: string) => {
       setLoading(true);
@@ -265,7 +269,6 @@ export default function Patients() {
           },
         });
 
-        // ✅ FIX: Match the same nested structure used in fetchLookups
         const body = response.data?.data ?? response.data;
         setPatients(body?.patients ?? []);
         setPagination(body?.pagination ?? defaultPagination);
@@ -301,20 +304,14 @@ export default function Patients() {
     fetchLookups();
   }, [fetchLookups]);
 
-  // Debounce the search input
   useEffect(() => {
     const timer = setTimeout(() => setSearch(inputValue.trim()), 350);
     return () => clearTimeout(timer);
   }, [inputValue]);
 
-  /* ──────────────────────────────────────────────
-   * FIX 2: single useEffect that refetches when
-   *         filters OR search change, always
-   *         resets to page 1
-   * ────────────────────────────────────────────── */
   useEffect(() => {
     fetchPatients(1, filters, search);
-    setSelectedPatientIds([]); // clear selection on filter/search change
+    setSelectedPatientIds([]); 
   }, [fetchPatients, filters, search]);
 
   const openCreateModal = () => {
@@ -365,10 +362,6 @@ export default function Patients() {
   const handleStatusDraftChange = (patientId: string, value: string) =>
     setStatusDrafts((current) => ({ ...current, [patientId]: value }));
 
-  /* ──────────────────────────────────────────────
-   * FIX 3: after status update, refetch with
-   *         current filters + search, not defaults
-   * ────────────────────────────────────────────── */
   const handleUpdateInsuranceStatus = async (patient: Patient) => {
     const memberPlanStatus = statusDrafts[patient.id];
     if (!memberPlanStatus) return toast.error("Select a status first");
@@ -396,10 +389,6 @@ export default function Patients() {
     );
   };
 
-  /* ──────────────────────────────────────────────
-   * FIX 4: toggleSelectAll checks by actual IDs
-   *         not just array length
-   * ────────────────────────────────────────────── */
   const toggleSelectAllOnPage = () => {
     const pageIds = patients.map((p) => p.id);
     const allSelected = pageIds.every((id) => selectedPatientIds.includes(id));
@@ -434,6 +423,22 @@ export default function Patients() {
     setQueueModalOpen(true);
   };
 
+  const openRecordingsModal = async (patient: Patient) => {
+    setActivePatientName(`${patient.firstName} ${patient.lastName}`);
+    setRecordingsModalOpen(true);
+    setLoadingRecordings(true);
+    try {
+      const res = await api.get(`/calls`, { params: { search: patient.firstName, limit: 100 } });
+      const allCalls = res.data?.data?.calls || [];
+      const recordings = allCalls.filter((c: any) => c.patientId === patient.id && c.recordingUrl);
+      setPatientRecordings(recordings);
+    } catch (err) {
+      toast.error("Failed to fetch recordings.");
+    } finally {
+      setLoadingRecordings(false);
+    }
+  };
+
   const createQueueForPatient = async () => {
     if (!queueForm) return;
     if (!queueForm.name.trim()) return toast.error("Queue name is required");
@@ -457,10 +462,6 @@ export default function Patients() {
     }
   };
 
-  /* ──────────────────────────────────────────────
-   * FIX 5: after create/edit, refetch with current
-   *         filters + search
-   * ────────────────────────────────────────────── */
   const onSubmit = async (values: PatientFormValues) => {
     setSaving(true);
     try {
@@ -513,9 +514,6 @@ export default function Patients() {
     ["Unknown", "Error", "No Answer"].includes(patient.memberPlanStatus || ""),
   ).length;
 
-  /* ──────────────────────────────────────────────
-   * FIX 6: check actual IDs, not just count
-   * ────────────────────────────────────────────── */
   const allSelectedOnPage =
     patients?.length > 0 &&
     patients?.every((p) => selectedPatientIds.includes(p.id));
@@ -528,7 +526,6 @@ export default function Patients() {
         icon={Users}
         action={
           <div className="flex gap-3">
-            {/* FIX 7: Refresh uses current filters + search */}
             <button
               onClick={() =>
                 fetchPatients(pagination.page || 1, filters, search)
@@ -831,6 +828,13 @@ export default function Patients() {
                               }
                             />
                           </button>
+                          <button 
+                            onClick={() => openRecordingsModal(patient)} 
+                            title="View Recordings"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-brand-200 bg-white text-brand-600 transition hover:bg-brand-50"
+                          >
+                            <Mic size={14} />
+                          </button>
                           <button
                             type="button"
                             onClick={() => openQueueModal(patient)}
@@ -839,33 +843,6 @@ export default function Patients() {
                           >
                             <PlusCircle size={14} />
                           </button>
-                          {/* <button
-                            type="button"
-                            onClick={() =>
-                              startCall({
-                                source: "patient_list",
-                                patientMeta: {
-                                  patientId: patient.id,
-                                  name: `${patient.firstName} ${patient.lastName}`,
-                                  dob: patient.dob,
-                                  insuranceCompany: patient.insurance?.name,
-                                  insurancePhone:
-                                    patient.insurance?.phone || undefined,
-                                  providerNpi:
-                                    patient.provider?.npi || undefined,
-                                  lookupData: buildPatientLookupData(patient),
-                                },
-                              })
-                            }
-                            disabled={
-                              callStatus === "connected" ||
-                              callStatus === "connecting"
-                            }
-                            title="Open patient call"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <Phone size={14} />
-                          </button> */}
                           <button
                             type="button"
                             onClick={() => openEditModal(patient)}
@@ -885,7 +862,6 @@ export default function Patients() {
         )}
 
         <div className="glass-card overflow-hidden">
-          {/* FIX 8: pagination uses current filters + search */}
           <TablePagination
             page={pagination.page}
             totalPages={pagination.totalPages}
@@ -897,6 +873,29 @@ export default function Patients() {
           />
         </div>
       </section>
+
+      {recordingsModalOpen && (
+        <AppModal onClose={() => setRecordingsModalOpen(false)} title={`Recordings: ${activePatientName}`}>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto p-4">
+            {loadingRecordings ? (
+              <RefreshCw className="animate-spin text-brand-500 mx-auto" />
+            ) : patientRecordings.length === 0 ? (
+              <p className="text-center text-slate-500 py-8">No recordings found for this patient.</p>
+            ) : (
+              patientRecordings.map((call) => (
+                <div key={call.id} className="p-4 border border-brand-100 rounded-xl bg-slate-50">
+                  <div className="flex justify-between items-center mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <p>{call.metadata?.insuranceCompany || "Call"}</p>
+                    <p className="text-slate-500 font-normal">{new Date(call.startedAt).toLocaleString()}</p>
+                  </div>
+                  <audio controls className="w-full h-8" src={call.recordingUrl} />
+                  <a href={`/calls/${call.id}`} className="text-[10px] text-brand-600 mt-2 inline-block hover:underline">View Details</a>
+                </div>
+              ))
+            )}
+          </div>
+        </AppModal>
+      )}
 
       {queueModalOpen && queueForm && (
         <AppModal

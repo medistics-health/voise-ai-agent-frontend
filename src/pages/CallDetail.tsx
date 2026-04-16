@@ -14,6 +14,7 @@ import {
   RefreshCcw,
   Pencil,
   Save,
+  Volume2
 } from "lucide-react";
 
 interface TranscriptEntry {
@@ -39,6 +40,7 @@ interface SOAPNote {
 interface CallDetail {
   id: string;
   roomName: string;
+  roomSid: string;
   callerNumber: string | null;
   callerName: string | null;
   status: string;
@@ -48,6 +50,7 @@ interface CallDetail {
   duration: number | null;
   startedAt: string;
   endedAt: string | null;
+  recordingUrl: string | null;
   metadata?: {
     insuranceCompany?: string;
     insurancePhone?: string;
@@ -94,6 +97,7 @@ export default function CallDetail() {
   const [call, setCall] = useState<CallDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [savingPatientStatus, setSavingPatientStatus] = useState(false);
   const [patientStatus, setPatientStatus] = useState("");
@@ -129,6 +133,24 @@ export default function CallDetail() {
       toast.error("Failed to load call details");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const syncRecording = async () => {
+    setSyncing(true);
+    try {
+      const res = await api.get(`/calls/${id}`);
+      const data = res.data.data;
+      setCall(data);
+      if (data.recordingUrl) {
+        toast.success("Recording found and linked!");
+      } else {
+        toast.error("Recording not yet available on Telnyx.");
+      }
+    } catch {
+      toast.error("Failed to sync with Telnyx.");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -229,6 +251,16 @@ export default function CallDetail() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {!call.recordingUrl && (
+              <button 
+                onClick={syncRecording} 
+                disabled={syncing}
+                className="btn-ghost text-[10px] border border-brand-100 px-2 py-1 rounded-lg text-brand-600 flex items-center gap-1"
+              >
+                <RefreshCcw size={10} className={syncing ? "animate-spin" : ""} />
+                {syncing ? "Syncing..." : "Sync Recording"}
+              </button>
+            )}
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${
                 call.status === "completed"
@@ -298,6 +330,14 @@ export default function CallDetail() {
             </div>
           </div>
         </div>
+
+        {/* Recording Section */}
+        {call.recordingUrl && (
+          <div className="mt-6 p-4 bg-brand-50 rounded-xl flex items-center gap-4 border border-brand-100">
+             <Volume2 size={18} className="text-brand-600" />
+             <audio controls className="w-full h-8" src={call.recordingUrl} />
+          </div>
+        )}
 
         {call.patient && (
           <div className="mt-6 rounded-xl border border-brand-100 bg-brand-50/60 p-4">
