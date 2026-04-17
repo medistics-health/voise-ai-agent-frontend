@@ -428,9 +428,8 @@ export default function Patients() {
     setRecordingsModalOpen(true);
     setLoadingRecordings(true);
     try {
-      const res = await api.get(`/calls`, { params: { search: patient.firstName, limit: 100 } });
-      const allCalls = res.data?.data?.calls || [];
-      const recordings = allCalls.filter((c: any) => c.patientId === patient.id && c.recordingUrl);
+      const res = await api.get(`/calls/patient/${patient.id}/recordings`);
+      const recordings = res.data?.data?.calls || [];
       setPatientRecordings(recordings);
     } catch (err) {
       toast.error("Failed to fetch recordings.");

@@ -22,7 +22,7 @@ import PageHeader from "../components/PageHeader";
 import { useCall, type ActiveCall } from "../contexts/CallContext";
 import { WavStreamPlayer } from "../lib/wavStreamPlayer";
 
-const AGENT_URL = "http://localhost:4100";
+const AGENT_URL = (import.meta as any).env.VITE_VOICE_AGENT_URL || "http://localhost:4100";
 
 function fmtDuration(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);

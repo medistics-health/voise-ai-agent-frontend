@@ -8,8 +8,9 @@ import {
   type ReactNode,
 } from "react";
 import toast from "react-hot-toast";
+import api from "../lib/api";
 
-const AGENT_URL = "http://localhost:4100";
+const AGENT_URL = (import.meta as any).env.VITE_VOICE_AGENT_URL || "http://localhost:4100";
 
 type CallStatus = "idle" | "connecting" | "connected" | "ended";
 type SpeakingState = "idle" | "user" | "ai" | "processing";
@@ -128,6 +129,56 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [isWidgetMinimized, setIsWidgetMinimized] = useState(false);
   const [patientMetadata, setPatientMetadata] = useState<PatientMetadata | null>(null);
   const [callSource, setCallSource] = useState<CallSource | null>(null);
+
+  // ── Persistence Recovery ──────────────────────────────────────
+  useEffect(() => {
+    const saved = localStorage.getItem("active_call_session");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.status === "connected" || parsed.status === "connecting") {
+          setRoomName(parsed.roomName);
+          roomNameRef.current = parsed.roomName; // Important for refs
+          setCallSessionId(parsed.callSessionId);
+          setStatus(parsed.status);
+          setPatientMetadata(parsed.patientMetadata);
+          setCallSource(parsed.callSource);
+          setIsWidgetOpen(true);
+          
+          // Re-fetch transcripts for historical context from backend
+          api.get(`/calls/${parsed.callSessionId}`)
+            .then(res => {
+              const data = res.data;
+              if (data.success && data.data?.transcripts) {
+                 const mapped = data.data.transcripts.map((t: any) => ({
+                   id: t.id,
+                   speaker: t.speaker,
+                   text: t.text,
+                   time: new Date(t.timestamp).toLocaleTimeString()
+                 }));
+                 setMessages(mapped);
+              }
+            }).catch(() => {});
+        }
+      } catch (e) {
+        localStorage.removeItem("active_call_session");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === "connected" || status === "connecting") {
+      localStorage.setItem("active_call_session", JSON.stringify({
+        status,
+        roomName,
+        callSessionId,
+        patientMetadata,
+        callSource
+      }));
+    } else if (status === "ended") {
+      localStorage.removeItem("active_call_session");
+    }
+  }, [status, roomName, callSessionId, patientMetadata, callSource]);
 
   const roomNameRef = useRef("");
   const recognitionRef = useRef<any>(null);
@@ -608,6 +659,25 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     };
   }, [status, isWidgetOpen]);
+  
+  // ─── Manual Sync on Mount ────────────────────────────────────
+  // SSE 'init' can sometimes be missed on rapid refreshes. 
+  // We fetch the latest active calls list via REST as a fallback.
+  useEffect(() => {
+    const syncActiveCalls = async () => {
+      try {
+        const response = await fetch(`${AGENT_URL}/agent/calls/active`);
+        const data = await response.json();
+        if (data.success && data.calls) {
+          setActiveCalls(data.calls);
+        }
+      } catch (err) {
+        // Silently fail, SSE might still connect
+      }
+    };
+    
+    syncActiveCalls();
+  }, [sseConnected]); // Retry once when SSE connection status changes
 
   const startCall = useCallback(
     async (options?: StartCallOptions) => {

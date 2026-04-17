@@ -36,7 +36,7 @@ export default function QueueCallListening({
   useEffect(() => {
     audioPlayerRef.current = new WavStreamPlayer()
 
-    const voiceAgentUrl = localStorage.getItem('voiceAgentUrl') || 'http://localhost:4100'
+    const voiceAgentUrl = (import.meta as any).env.VITE_VOICE_AGENT_URL || localStorage.getItem('voiceAgentUrl') || 'http://localhost:4100'
     const es = new EventSource(`${voiceAgentUrl}/agent/events`)
 
     es.onopen = () => {
