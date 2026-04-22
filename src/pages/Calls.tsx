@@ -114,7 +114,7 @@ export default function Calls() {
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
     page: 1,
-    limit: 20,
+    limit: 10,
     totalPages: 0,
   });
   const [search, setSearch] = useState("");
@@ -153,7 +153,7 @@ export default function Calls() {
           body?.pagination ?? {
             total: 0,
             page: 1,
-            limit: 20,
+            limit: 10,
             totalPages: 0,
           },
         );

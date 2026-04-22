@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import api from '../lib/api'
 import { ShieldCheck, UserRound } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import TablePagination from '../components/TablePagination'
 import { TableSkeleton } from '../components/Skeleton'
 
 interface CoverageRow {
@@ -35,11 +36,27 @@ export default function Coverage() {
   const [rows, setRows] = useState<CoverageRow[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    api.get('/eligibility/coverage')
-      .then((res) => setRows(res.data.data ?? []))
-      .finally(() => setLoading(false))
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 })
+
+  const fetchCoverage = useCallback(async (page: number) => {
+    setLoading(true)
+    try {
+      const res = await api.get('/eligibility/coverage', { params: { page, limit: 10 } })
+      const body = res.data.data
+      setRows(body.coverage ?? [])
+      setPagination(body.pagination ?? { total: 0, page: 1, limit: 10, totalPages: 0 })
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    fetchCoverage(1)
+  }, [fetchCoverage])
+
+  const onPageChange = (newPage: number) => {
+    fetchCoverage(newPage)
+  }
 
   return (
     <div className="p-8 space-y-6">
@@ -107,6 +124,14 @@ export default function Coverage() {
           </div>
         )}
       </div>
+      {!loading && rows.length > 0 && (
+        <TablePagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          onPageChange={onPageChange}
+        />
+      )}
     </div>
   )
 }

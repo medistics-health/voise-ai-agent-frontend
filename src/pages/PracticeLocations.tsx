@@ -168,46 +168,54 @@ export default function PracticeLocations() {
 
   const onSubmit = async (values: PracticeLocationFormValues) => {
     setSaving(true)
+
+    const sanitizedValues = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? value.trim() : value
+      ])
+    ) as PracticeLocationFormValues;
+
     try {
       if (editingLocation) {
         await api.put(`/practice-locations/${editingLocation.id}`, {
-          name: values.name,
-          npi: values.npi,
-          addressLine1: values.addressLine1,
-          addressLine2: values.addressLine2,
-          city: values.city,
-          state: values.state,
-          zip: values.zip,
+          name: sanitizedValues.name,
+          npi: sanitizedValues.npi,
+          addressLine1: sanitizedValues.addressLine1,
+          addressLine2: sanitizedValues.addressLine2,
+          city: sanitizedValues.city,
+          state: sanitizedValues.state,
+          zip: sanitizedValues.zip,
         })
         // Update provider relationships
         await api.put(`/practice-locations/${editingLocation.id}/providers`, {
-          providerIds: values.providerIds,
+          providerIds: sanitizedValues.providerIds,
         })
         // Update group relationships
         await api.put(`/practice-locations/${editingLocation.id}/groups`, {
-          groupIds: values.groupIds,
+          groupIds: sanitizedValues.groupIds,
         })
         toast.success('Practice location updated')
       } else {
         const createRes = await api.post('/practice-locations', {
-          name: values.name,
-          npi: values.npi,
-          addressLine1: values.addressLine1,
-          addressLine2: values.addressLine2,
-          city: values.city,
-          state: values.state,
-          zip: values.zip,
+          name: sanitizedValues.name,
+          npi: sanitizedValues.npi,
+          addressLine1: sanitizedValues.addressLine1,
+          addressLine2: sanitizedValues.addressLine2,
+          city: sanitizedValues.city,
+          state: sanitizedValues.state,
+          zip: sanitizedValues.zip,
         })
         // Update provider relationships for new location
-        if (values.providerIds.length > 0) {
+        if (sanitizedValues.providerIds.length > 0) {
           await api.put(`/practice-locations/${createRes.data.data.id}/providers`, {
-            providerIds: values.providerIds,
+            providerIds: sanitizedValues.providerIds,
           })
         }
         // Update group relationships for new location
-        if (values.groupIds.length > 0) {
+        if (sanitizedValues.groupIds.length > 0) {
           await api.put(`/practice-locations/${createRes.data.data.id}/groups`, {
-            groupIds: values.groupIds,
+            groupIds: sanitizedValues.groupIds,
           })
         }
         toast.success('Practice location created')
@@ -375,6 +383,7 @@ export default function PracticeLocations() {
                   required: 'Name is required',
                   minLength: { value: 3, message: 'Minimum 3 characters' },
                   maxLength: { value: 255, message: 'Maximum 255 characters' },
+                  validate: (v) => v.trim().length > 0 || 'Name cannot be only spaces',
                 })}
               />
               {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}

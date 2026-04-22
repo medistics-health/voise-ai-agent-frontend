@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { Skeleton, TableSkeleton } from '../components/Skeleton'
+import TablePagination from '../components/TablePagination'
 
 interface Job {
   id: string
@@ -94,10 +95,27 @@ function getMemberId(check: Check) {
 function JobList() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 })
+
+  const fetchJobs = async (page: number) => {
+    setLoading(true)
+    try {
+      const res = await api.get('/eligibility/jobs', { params: { page, limit: 10 } })
+      const body = res.data.data
+      setJobs(body.jobs ?? [])
+      setPagination(body.pagination ?? { total: 0, page: 1, limit: 10, totalPages: 0 })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    api.get('/eligibility/jobs').then((r) => setJobs(r.data.data ?? [])).finally(() => setLoading(false))
+    fetchJobs(1)
   }, [])
+
+  const onPageChange = (newPage: number) => {
+    fetchJobs(newPage)
+  }
 
   return (
     <div className="p-8 space-y-6">
@@ -105,6 +123,11 @@ function JobList() {
         title="Results"
         subtitle="All eligibility jobs."
         icon={ClipboardList}
+        action={
+          <button onClick={() => fetchJobs(pagination.page)} className="btn-ghost inline-flex items-center gap-2 text-sm">
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
+        }
       />
 
       <div className="table-shell">
@@ -156,6 +179,14 @@ function JobList() {
           </div>
         )}
       </div>
+      {!loading && jobs.length > 0 && (
+        <TablePagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          onPageChange={onPageChange}
+        />
+      )}
     </div>
   )
 }

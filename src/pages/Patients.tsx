@@ -225,6 +225,8 @@ export default function Patients() {
   const [queueSaving, setQueueSaving] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
+  const today = new Date().toISOString().split("T")[0];
   const [queueModalOpen, setQueueModalOpen] = useState(false);
   const [queueForm, setQueueForm] = useState<QueueForm | null>(null);
   const [selectedPatientIds, setSelectedPatientIds] = useState<string[]>([]);
@@ -643,29 +645,49 @@ export default function Patients() {
                 </option>
               ))}
             </select>
-            <input
-              type="date"
-              className="input-field h-10 min-w-[148px] text-sm"
-              value={filters.statusDateFrom}
-              onChange={(event) =>
-                handleFilterChange("statusDateFrom", event.target.value)
-              }
-            />
-            <input
-              type="date"
-              className="input-field h-10 min-w-[148px] text-sm"
-              value={filters.statusDateTo}
-              onChange={(event) =>
-                handleFilterChange("statusDateTo", event.target.value)
-              }
-            />
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="btn-ghost h-10 whitespace-nowrap !px-4 text-sm"
-            >
-              Clear Filters
-            </button>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase tracking-wider font-bold text-slate-500 ml-1">Status Date From</label>
+              <input
+                type="date"
+                className="input-field h-10 min-w-[148px] text-sm"
+                value={filters.statusDateFrom}
+                max={today}
+                onChange={(event) => {
+                  const newFrom = event.target.value;
+                  handleFilterChange("statusDateFrom", newFrom);
+                  if (filters.statusDateTo && newFrom > filters.statusDateTo) {
+                    handleFilterChange("statusDateTo", "");
+                  }
+                }}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase tracking-wider font-bold text-slate-500 ml-1">Status Date To</label>
+              <input
+                type="date"
+                className="input-field h-10 min-w-[148px] text-sm"
+                value={filters.statusDateTo}
+                min={filters.statusDateFrom}
+                max={today}
+                onChange={(event) => {
+                  const newTo = event.target.value;
+                  if (filters.statusDateFrom && newTo < filters.statusDateFrom) {
+                    toast.error("To date cannot be earlier than From date");
+                    return;
+                  }
+                  handleFilterChange("statusDateTo", newTo);
+                }}
+              />
+            </div>
+            <div className="pt-5 mr-auto">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs text-brand-600 font-semibold hover:underline"
+              >
+                Clear
+              </button>
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-4 text-xs text-slate-500">
@@ -1149,8 +1171,16 @@ export default function Patients() {
               </select>
             </div>
             <div>
-              {label("Payer Name")}
-              <input className="input-field" {...register("payerName")} />
+              {label("Payer Name", true)}
+              <input 
+                className="input-field" 
+                {...register("payerName", { required: "Payer Name is required" })} 
+              />
+              {errors.payerName && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.payerName.message}
+                </p>
+              )}
             </div>
             <div>
               {label("Payer Member ID")}

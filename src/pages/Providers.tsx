@@ -132,12 +132,21 @@ export default function Providers() {
 
   const onSubmit = async (values: ProviderFormValues) => {
     setSaving(true)
+    
+    // Sanitize string values
+    const sanitizedValues = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? value.trim() : value
+      ])
+    ) as ProviderFormValues;
+
     try {
       if (editingProvider) {
-        await api.put(`/providers/${editingProvider.id}`, values)
+        await api.put(`/providers/${editingProvider.id}`, sanitizedValues)
         toast.success('Provider updated')
       } else {
-        await api.post('/providers', values)
+        await api.post('/providers', sanitizedValues)
         toast.success('Provider created')
       }
       closeModal()
@@ -274,6 +283,7 @@ export default function Providers() {
                   required: 'Name is required',
                   minLength: { value: 3, message: 'Minimum 3 characters' },
                   maxLength: { value: 255, message: 'Maximum 255 characters' },
+                  validate: (v) => v.trim().length > 0 || 'Name cannot be only spaces',
                 })}
               />
               {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}

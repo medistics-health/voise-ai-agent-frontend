@@ -20,7 +20,7 @@ export default function Upload() {
   const navigate = useNavigate();
 
   const handleFile = (f: File) => {
-    if (!f.name.endsWith(".csv")) {
+    if (!f.name.toLowerCase().endsWith(".csv")) {
       toast.error("Only CSV files are supported");
       return;
     }
@@ -100,7 +100,7 @@ export default function Upload() {
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
-        onClick={() => !file && inputRef.current?.click()}
+        onClick={() => inputRef.current?.click()}
         className={`relative rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer bg-white
           ${
             dragging
@@ -137,6 +137,7 @@ export default function Upload() {
                 onClick={(e) => {
                   e.stopPropagation();
                   setFile(null);
+                  if (inputRef.current) inputRef.current.value = "";
                 }}
                 className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-red-600 transition-colors"
               >

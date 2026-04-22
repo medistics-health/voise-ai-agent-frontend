@@ -3,6 +3,8 @@ import toast from 'react-hot-toast'
 import {
   AlertCircle,
   CalendarClock,
+  ChevronLeft,
+  ChevronRight,
   ListOrdered,
   Pause,
   Play,
@@ -143,6 +145,7 @@ export default function CallQueue() {
   const [queuePagination, setQueuePagination] = useState<Pagination>(defaultPagination)
   const [loadingQueues, setLoadingQueues] = useState(true)
   const [loadingItems, setLoadingItems] = useState(false)
+  const [queueStats, setQueueStats] = useState<any>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [createLoading, setCreateLoading] = useState(false)
@@ -151,13 +154,11 @@ export default function CallQueue() {
   const [createForm, setCreateForm] = useState(defaultCreateForm)
 
   const selectedQueue = queues.find((queue) => queue.id === selectedQueueId) ?? null
-  const totalQueuedPatients = queues.reduce((sum, queue) => sum + queue.totalCount, 0)
-  const pendingPatientsEstimate = queues.reduce(
-    (sum, queue) => sum + Math.max(queue.totalCount - queue.processedCount, 0),
-    0
-  )
-  const activeQueues = queues.filter((queue) => queue.status === 'active').length
   const selectedQueuePending = items.filter((item) => item.status === 'pending').length
+
+  const totalQueuedPatients = (queueStats?.queueStats?.pendingQueueItems ?? 0) + (queueStats?.queueStats?.callingQueueItems ?? 0) + (queueStats?.queueStats?.completedQueueItems ?? 0)
+  const pendingPatientsEstimate = queueStats?.queueStats?.pendingQueueItems ?? 0
+  const activeQueues = queueStats?.queueStats?.activeQueues ?? 0
 
   const fetchQueues = async (page = 1, preserveSelection = true) => {
     setLoadingQueues(true)
@@ -165,7 +166,7 @@ export default function CallQueue() {
       const res = await api.get('/call-queues', { params: { page, limit: 10 } })
       const queueList: QueueSummary[] = Array.isArray(res.data?.queues) ? res.data.queues : []
       setQueues(queueList)
-      
+
       if (res.data?.pagination) {
         setQueuePagination(res.data.pagination)
       }
@@ -183,6 +184,13 @@ export default function CallQueue() {
     } finally {
       setLoadingQueues(false)
     }
+  }
+
+  const fetchGlobalStats = async () => {
+    try {
+      const res = await api.get('/calls/stats')
+      setQueueStats(res.data?.data)
+    } catch { }
   }
 
   const fetchQueueItems = async (queueId: string, page = 1) => {
@@ -220,6 +228,7 @@ export default function CallQueue() {
 
   useEffect(() => {
     fetchQueues(1, false)
+    fetchGlobalStats()
   }, [])
 
   useEffect(() => {
@@ -326,7 +335,13 @@ export default function CallQueue() {
         action={
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => fetchQueues(queuePagination.page)}
+              onClick={() => {
+                fetchQueues(1);
+                fetchGlobalStats();
+                if (selectedQueueId) {
+                  fetchQueueItems(selectedQueueId, 1);
+                }
+              }}
               className="btn-ghost inline-flex items-center gap-2"
             >
               <RefreshCw size={14} className={loadingQueues ? 'animate-spin' : ''} />
@@ -406,9 +421,8 @@ export default function CallQueue() {
                     key={queue.id}
                     type="button"
                     onClick={() => setSelectedQueueId(queue.id)}
-                    className={`w-full text-left px-5 py-4 transition-colors ${
-                      isSelected ? 'bg-brand-50/70' : 'hover:bg-brand-50/30'
-                    }`}
+                    className={`w-full text-left px-5 py-4 transition-colors ${isSelected ? 'bg-brand-50/70' : 'hover:bg-brand-50/30'
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -452,25 +466,25 @@ export default function CallQueue() {
 
           {queuePagination.totalPages > 1 && (
             <div className="p-4 border-t border-brand-100">
-               <div className="flex items-center justify-between gap-2">
-                 <button 
+              <div className="flex items-center justify-between gap-2">
+                <button
                   disabled={queuePagination.page <= 1}
                   onClick={() => fetchQueues(queuePagination.page - 1)}
-                  className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-500 disabled:opacity-30"
-                 >
-                   <RefreshCw size={14} className={queuePagination.page > 1 ? "rotate-180" : ""} />
-                 </button>
-                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                   Page {queuePagination.page} of {queuePagination.totalPages}
-                 </span>
-                 <button 
+                  className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-700 font-bold disabled:opacity-30"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Page {queuePagination.page} of {queuePagination.totalPages}
+                </span>
+                <button
                   disabled={queuePagination.page >= queuePagination.totalPages}
                   onClick={() => fetchQueues(queuePagination.page + 1)}
-                  className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-500 disabled:opacity-30"
-                 >
-                   <RefreshCw size={14} />
-                 </button>
-               </div>
+                  className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-700 font-bold disabled:opacity-30"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           )}
         </section>
@@ -708,11 +722,10 @@ export default function CallQueue() {
                           option.value === 'by_location' ? current.practiceLocationId : '',
                       }))
                     }
-                    className={`rounded-2xl border p-4 text-left transition-colors ${
-                      createForm.filterType === option.value
-                        ? 'border-brand-300 bg-brand-50'
-                        : 'border-slate-200 hover:border-brand-200 hover:bg-slate-50'
-                    }`}
+                    className={`rounded-2xl border p-4 text-left transition-colors ${createForm.filterType === option.value
+                      ? 'border-brand-300 bg-brand-50'
+                      : 'border-slate-200 hover:border-brand-200 hover:bg-slate-50'
+                      }`}
                   >
                     <p className="text-sm font-semibold text-ink-950">{option.title}</p>
                     <p className="text-sm text-slate-500 mt-1">{option.description}</p>

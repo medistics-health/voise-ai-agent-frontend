@@ -52,6 +52,11 @@ interface Patient {
   lastName: string;
 }
 
+interface Provider {
+  id: string;
+  name: string;
+}
+
 interface Pagination {
   total: number;
   page: number;
@@ -103,13 +108,16 @@ const defaultForm: AppointmentForm = {
 export default function Appointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
     page: 1,
-    limit: 20,
+    limit: 10,
     totalPages: 0,
   });
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingAppt, setEditingAppt] = useState<Appointment | null>(null);
@@ -123,11 +131,13 @@ export default function Appointments() {
   } = useForm<AppointmentForm>({ defaultValues: defaultForm });
 
   const fetchAppointments = useCallback(
-    async (page: number, status: string) => {
+    async (page: number, status: string, from?: string, to?: string) => {
       setLoading(true);
       try {
-        const params: any = { page, limit: 20 };
+        const params: any = { page, limit: 10 };
         if (status && status !== "all") params.status = status;
+        if (from) params.dateFrom = from;
+        if (to) params.dateTo = to;
         const res = await api.get("/appointments", { params });
         setAppointments(res.data.data.appointments ?? []);
         setPagination(res.data.data.pagination);
@@ -146,13 +156,23 @@ export default function Appointments() {
         params: { limit: 100, page: 1 },
       });
       setPatients(res.data.data.patients ?? []);
-    } catch {}
+    } catch { }
+  }, []);
+
+  const fetchProviders = useCallback(async () => {
+    try {
+      const res = await api.get("/providers", {
+        params: { limit: 100, page: 1 },
+      });
+      setProviders(res.data.data.providers ?? []);
+    } catch { }
   }, []);
 
   useEffect(() => {
-    fetchAppointments(1, statusFilter);
+    fetchAppointments(1, statusFilter, dateFrom, dateTo);
     fetchPatients();
-  }, [statusFilter, fetchAppointments, fetchPatients]);
+    fetchProviders();
+  }, [statusFilter, dateFrom, dateTo, fetchAppointments, fetchPatients, fetchProviders]);
 
   const openCreate = () => {
     setEditingAppt(null);
@@ -166,7 +186,7 @@ export default function Appointments() {
       patientId: appt.patientId,
       providerName: appt.providerName,
       appointmentDate: appt.appointmentDate,
-      appointmentTime: appt.appointmentTime,
+      appointmentTime: formatTimeTo24H(appt.appointmentTime),
       appointmentType: appt.appointmentType,
       reason: appt.reason || "",
       notes: appt.notes || "",
@@ -183,15 +203,20 @@ export default function Appointments() {
   const onSubmit = async (values: AppointmentForm) => {
     setSaving(true);
     try {
+      const payload = {
+        ...values,
+        appointmentTime: formatTimeTo12H(values.appointmentTime),
+      };
+
       if (editingAppt) {
-        await api.put(`/appointments/${editingAppt.id}`, values);
+        await api.put(`/appointments/${editingAppt.id}`, payload);
         toast.success("Appointment updated");
       } else {
-        await api.post("/appointments", values);
+        await api.post("/appointments", payload);
         toast.success("Appointment created");
       }
       closeModal();
-      fetchAppointments(1, statusFilter);
+      fetchAppointments(1, statusFilter, dateFrom, dateTo);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to save");
     } finally {
@@ -203,7 +228,7 @@ export default function Appointments() {
     try {
       await api.put(`/appointments/${id}`, { status });
       toast.success(`Appointment ${status}`);
-      fetchAppointments(pagination.page, statusFilter);
+      fetchAppointments(pagination.page, statusFilter, dateFrom, dateTo);
     } catch {
       toast.error("Failed to update");
     }
@@ -243,6 +268,27 @@ export default function Appointments() {
     }
   };
 
+  const formatTimeTo12H = (time24: string) => {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(":");
+    let h = parseInt(hours);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+  };
+
+  const formatTimeTo24H = (time12: string) => {
+    if (!time12) return "";
+    const match = time12.match(/^(0?[1-9]|1[0-2]):([0-5][0-9])\s(AM|PM|am|pm)$/i);
+    if (!match) return "";
+    let h = parseInt(match[1]);
+    const minutes = match[2];
+    const modifier = match[3].toUpperCase();
+    if (modifier === "PM" && h < 12) h += 12;
+    if (modifier === "AM" && h === 12) h = 0;
+    return `${h.toString().padStart(2, "0")}:${minutes}`;
+  };
+
   return (
     <div className="p-8 space-y-6">
       <PageHeader
@@ -262,19 +308,52 @@ export default function Appointments() {
       />
 
       {/* Filter */}
-      <div className="flex items-center gap-3">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="input-field w-auto"
-        >
-          <option value="all">All Status</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="no_show">No Show</option>
-        </select>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] uppercase tracking-wider font-bold text-slate-500 ml-1">Status</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input-field w-auto"
+          >
+            <option value="all">All Status</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="no_show">No Show</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] uppercase tracking-wider font-bold text-slate-500 ml-1">From Date</label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="input-field w-auto"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] uppercase tracking-wider font-bold text-slate-500 ml-1">To Date</label>
+          <input
+            type="date"
+            value={dateTo}
+            min={dateFrom}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="input-field w-auto"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5 pt-6">
+          <button
+            onClick={() => { setDateFrom(""); setDateTo(""); setStatusFilter("all"); }}
+            className="text-xs text-brand-600 font-semibold hover:underline px-2"
+          >
+            Clear Filters
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -287,12 +366,7 @@ export default function Appointments() {
           <div className="p-16 text-center">
             <Calendar size={40} className="text-brand-300 mx-auto mb-3" />
             <p className="text-slate-500 text-sm">No appointments found.</p>
-            <button
-              onClick={seedAppointments}
-              className="btn-primary text-xs mt-3"
-            >
-              Add Sample Appointments
-            </button>
+
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -367,14 +441,14 @@ export default function Appointments() {
                           )}
                           {(appt.status === "scheduled" ||
                             appt.status === "confirmed") && (
-                            <button
-                              onClick={() => updateStatus(appt.id, "cancelled")}
-                              className="btn-ghost px-2 py-1 text-[10px] text-red-500"
-                              title="Cancel"
-                            >
-                              <XCircle size={13} />
-                            </button>
-                          )}
+                              <button
+                                onClick={() => updateStatus(appt.id, "cancelled")}
+                                className="btn-ghost px-2 py-1 text-[10px] text-red-500"
+                                title="Cancel"
+                              >
+                                <XCircle size={13} />
+                              </button>
+                            )}
                           <button
                             onClick={() => openEdit(appt)}
                             className="btn-ghost px-2 py-1 text-[10px]"
@@ -458,8 +532,7 @@ export default function Appointments() {
                   Time <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
-                  placeholder="10:30 AM"
+                  type="time"
                   className="input-field"
                   {...register("appointmentTime", {
                     required: "Time is required",
@@ -478,14 +551,19 @@ export default function Appointments() {
                 <label className="label">
                   Provider <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  placeholder="Dr. Smith"
+                <select
                   className="input-field"
                   {...register("providerName", {
                     required: "Provider is required",
                   })}
-                />
+                >
+                  <option value="">Select provider</option>
+                  {providers.map((p) => (
+                    <option key={p.id} value={p.name}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
                 {errors.providerName && (
                   <p className="text-xs text-red-600 mt-1">
                     {errors.providerName.message}

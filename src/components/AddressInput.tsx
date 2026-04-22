@@ -67,6 +67,7 @@ export default function AddressInput<T extends FieldValues>({
               value: /^[A-Za-z0-9\s.,#-]*$/,
               message: 'Invalid address format',
             },
+            validate: optional ? undefined : (v) => !v || v.trim().length > 0 || 'Address cannot be only spaces',
           })}
         />
         {getFieldError(fieldNames.line1) && (
@@ -98,10 +99,11 @@ export default function AddressInput<T extends FieldValues>({
         {label('State', !optional)}
         <input
           className="input-field"
-          placeholder="State code"
+          placeholder="State"
           {...register(fieldNames.state, {
             ...(optional ? {} : { required: 'State is required' }),
-            maxLength: { value: 10, message: 'Maximum 10 characters' },
+            maxLength: { value: 100, message: 'Maximum 100 characters' },
+            validate: optional ? undefined : (v) => !v || v.trim().length > 0 || 'State cannot be only spaces',
           })}
         />
         {getFieldError(fieldNames.state) && (
@@ -118,6 +120,7 @@ export default function AddressInput<T extends FieldValues>({
           {...register(fieldNames.city, {
             ...(optional ? {} : { required: 'City is required' }),
             maxLength: { value: 120, message: 'Maximum 120 characters' },
+            validate: optional ? undefined : (v) => !v || v.trim().length > 0 || 'City cannot be only spaces',
           })}
         />
         {getFieldError(fieldNames.city) && (
@@ -137,6 +140,7 @@ export default function AddressInput<T extends FieldValues>({
               value: /^\d{5}(\d{4})?$|^\d{5}-\d{4}$/,
               message: 'Enter a valid ZIP code (5 or 9 digits)',
             },
+            validate: optional ? undefined : (v) => !v || v.trim().length > 0 || 'Zip code cannot be only spaces',
           })}
         />
         {getFieldError(fieldNames.zip) && (

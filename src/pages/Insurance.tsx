@@ -136,12 +136,28 @@ export default function Insurance() {
 
   const onSubmit = async (values: InsuranceFormValues) => {
     setSaving(true)
+
+    const sanitizedValues = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? value.trim() : value
+      ])
+    ) as InsuranceFormValues;
+
+    if (sanitizedValues.workingHoursStart && sanitizedValues.workingHoursEnd) {
+      if (sanitizedValues.workingHoursStart >= sanitizedValues.workingHoursEnd) {
+        toast.error('End time must be after start time');
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       if (editingInsurance) {
-        await api.put(`/insurances/${editingInsurance.id}`, values)
+        await api.put(`/insurances/${editingInsurance.id}`, sanitizedValues)
         toast.success('Insurance updated')
       } else {
-        await api.post('/insurances', values)
+        await api.post('/insurances', sanitizedValues)
         toast.success('Insurance created')
       }
       closeModal()
@@ -251,7 +267,7 @@ export default function Insurance() {
               <div className="xl:col-span-2">
                 {label('Insurance Name', true)}
                 <input
-                  {...register('name', { required: 'Insurance name is required', minLength: { value: 3, message: 'Minimum 3 characters' }, maxLength: { value: 255, message: 'Maximum 255 characters' } })}
+                  {...register('name', { required: 'Insurance name is required', minLength: { value: 3, message: 'Minimum 3 characters' }, maxLength: { value: 255, message: 'Maximum 255 characters' }, validate: (v) => v.trim().length > 0 || 'Name cannot be only spaces' })}
                   className="input-field"
                   placeholder="Enter insurance name"
                 />
@@ -261,7 +277,7 @@ export default function Insurance() {
               <div>
                 {label('Phone Number', true)}
                 <input
-                  {...register('phone', { required: 'Phone number is required', pattern: { value: /^[0-9()+\-\s]*$/, message: 'Enter a valid phone number' } })}
+                  {...register('phone', { required: 'Phone number is required', pattern: { value: /^[0-9()+\-\s]*$/, message: 'Enter a valid phone number' }, validate: (v) => v.trim().length > 0 || 'Phone cannot be only spaces' })}
                   className="input-field"
                   placeholder="Enter phone number"
                   type="tel"

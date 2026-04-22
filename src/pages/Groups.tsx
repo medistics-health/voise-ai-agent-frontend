@@ -177,15 +177,15 @@ export default function Groups() {
     try {
       if (editingGroup) {
         await api.put(`/groups/${editingGroup.id}`, {
-          name: values.name,
-          npi: values.npi,
+          name: values.name.trim(),
+          npi: values.npi.trim(),
           category: values.category,
-          ein: values.ein,
-          streetAddress: values.streetAddress,
-          streetAddress2: values.streetAddress2,
-          city: values.city,
-          state: values.state,
-          zip: values.zip,
+          ein: values.ein.trim(),
+          streetAddress: values.streetAddress.trim(),
+          streetAddress2: values.streetAddress2.trim(),
+          city: values.city.trim(),
+          state: values.state.trim().toUpperCase(),
+          zip: values.zip.trim(),
         });
         // Update provider relationships
         await api.put(`/groups/${editingGroup.id}/providers`, {
@@ -194,15 +194,15 @@ export default function Groups() {
         toast.success("Group updated");
       } else {
         const createRes = await api.post("/groups", {
-          name: values.name,
-          npi: values.npi,
+          name: values.name.trim(),
+          npi: values.npi.trim(),
           category: values.category,
-          ein: values.ein,
-          streetAddress: values.streetAddress,
-          streetAddress2: values.streetAddress2,
-          city: values.city,
-          state: values.state,
-          zip: values.zip,
+          ein: values.ein.trim(),
+          streetAddress: values.streetAddress.trim(),
+          streetAddress2: values.streetAddress2.trim(),
+          city: values.city.trim(),
+          state: values.state.trim().toUpperCase(),
+          zip: values.zip.trim(),
         });
         // Update provider relationships for new group
         if (values.providerIds.length > 0) {
@@ -393,6 +393,7 @@ export default function Groups() {
                       value: 255,
                       message: "Maximum 255 characters",
                     },
+                    validate: (v) => v.trim().length > 0 || "Name cannot be only spaces",
                   })}
                 />
                 {errors.name && (
@@ -408,6 +409,10 @@ export default function Groups() {
                   className="input-field"
                   {...register("npi", {
                     maxLength: { value: 50, message: "Maximum 50 characters" },
+                    pattern: {
+                      value: /^\S*$/,
+                      message: "No spaces allowed in NPI",
+                    },
                   })}
                   placeholder="National Provider Identifier"
                 />
@@ -444,6 +449,10 @@ export default function Groups() {
                   className="input-field"
                   {...register("ein", {
                     maxLength: { value: 50, message: "Maximum 50 characters" },
+                    pattern: {
+                      value: /^\S*$/,
+                      message: "No spaces allowed in EIN",
+                    },
                   })}
                   placeholder="Employer Identification Number"
                 />
@@ -513,6 +522,10 @@ export default function Groups() {
                   className="input-field"
                   {...register("state", {
                     maxLength: { value: 2, message: "Maximum 2 characters" },
+                    pattern: {
+                      value: /^[A-Za-z]{2}$/,
+                      message: "State must be a 2-letter code",
+                    },
                   })}
                   placeholder="NJ"
                   maxLength={2}
@@ -530,6 +543,10 @@ export default function Groups() {
                   className="input-field"
                   {...register("zip", {
                     maxLength: { value: 10, message: "Maximum 10 characters" },
+                    pattern: {
+                      value: /^[0-9-]*$/,
+                      message: "ZIP code must contain only digits or hyphens",
+                    },
                   })}
                   placeholder="070943242"
                 />

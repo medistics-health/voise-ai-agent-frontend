@@ -57,7 +57,7 @@ export default function FAQManagement() {
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
     page: 1,
-    limit: 50,
+    limit: 10,
     totalPages: 0,
   });
   const [search, setSearch] = useState("");
@@ -85,7 +85,7 @@ export default function FAQManagement() {
     setLoading(true);
     try {
       const res = await api.get("/faq", {
-        params: { page, limit: 50, search: searchTerm },
+        params: { page, limit: 10, search: searchTerm },
       });
       setFaqs(res.data.data.faqs ?? []);
       setPagination(res.data.data.pagination);
