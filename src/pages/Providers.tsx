@@ -304,9 +304,13 @@ export default function Providers() {
               <input
                 className="input-field"
                 {...register('phone', {
-                  maxLength: { value: 20, message: 'Maximum 20 characters' },
+                  pattern: {
+                    value: /^\d{10}$/,
+                    message: "Phone must be exactly 10 digits (no spaces or dashes)",
+                  },
                 })}
-                placeholder="(555) 123-4567"
+                placeholder="5551234567"
+                maxLength={10}
               />
               {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone.message}</p>}
             </div>
@@ -315,9 +319,13 @@ export default function Providers() {
               <input
                 className="input-field"
                 {...register('fax', {
-                  maxLength: { value: 20, message: 'Maximum 20 characters' },
+                  pattern: {
+                    value: /^\d{10}$/,
+                    message: "Fax must be exactly 10 digits (no spaces or dashes)",
+                  },
                 })}
-                placeholder="(555) 123-4568"
+                placeholder="5551234568"
+                maxLength={10}
               />
               {errors.fax && <p className="text-xs text-red-600 mt-1">{errors.fax.message}</p>}
             </div>

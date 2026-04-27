@@ -333,7 +333,10 @@ export default function FAQManagement() {
               <input
                 className="input-field"
                 placeholder="What are your office hours?"
-                {...register("question", { required: "Question is required" })}
+                {...register("question", {
+                  required: "Question is required",
+                  validate: (v) => v.trim().length > 0 || "Question cannot be only spaces",
+                })}
               />
               {errors.question && (
                 <p className="text-xs text-red-600 mt-1">
@@ -349,7 +352,10 @@ export default function FAQManagement() {
                 rows={4}
                 className="input-field"
                 placeholder="Our office is open Monday through Friday..."
-                {...register("answer", { required: "Answer is required" })}
+                {...register("answer", {
+                  required: "Answer is required",
+                  validate: (v) => v.trim().length > 0 || "Answer cannot be only spaces",
+                })}
               />
               {errors.answer && (
                 <p className="text-xs text-red-600 mt-1">

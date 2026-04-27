@@ -245,6 +245,24 @@ export default function Patients() {
   const [patientRecordings, setPatientRecordings] = useState<any[]>([]);
   const [activePatientName, setActivePatientName] = useState("");
 
+  // Global aggregate stats (all pages)
+  const [globalStats, setGlobalStats] = useState<{
+    totalPatients: number;
+    unverifiedPatients: number;
+    activePatients: number;
+    needsReviewPatients: number;
+  } | null>(null);
+
+  const fetchGlobalStats = useCallback(async () => {
+    try {
+      const res = await api.get("/calls/stats");
+      const ps = res.data?.data?.patientStats;
+      if (ps) setGlobalStats(ps);
+    } catch {
+      // non-fatal
+    }
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -304,7 +322,8 @@ export default function Patients() {
 
   useEffect(() => {
     fetchLookups();
-  }, [fetchLookups]);
+    fetchGlobalStats();
+  }, [fetchLookups, fetchGlobalStats]);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(inputValue.trim()), 350);
@@ -505,13 +524,13 @@ export default function Patients() {
     }
   };
 
-  const totalUnverified = patients?.filter(
+  const totalUnverified = globalStats?.unverifiedPatients ?? patients?.filter(
     (patient) => !patient.memberPlanStatus,
   ).length;
-  const totalActive = patients?.filter(
+  const totalActive = globalStats?.activePatients ?? patients?.filter(
     (patient) => patient.memberPlanStatus === "Active",
   ).length;
-  const totalNeedsReview = patients?.filter((patient) =>
+  const totalNeedsReview = globalStats?.needsReviewPatients ?? patients?.filter((patient) =>
     ["Unknown", "Error", "No Answer"].includes(patient.memberPlanStatus || ""),
   ).length;
 
@@ -561,12 +580,12 @@ export default function Patients() {
             Total Patients
           </p>
           <p className="text-3xl font-bold text-ink-950 mt-3">
-            {pagination.total}
+            {globalStats?.totalPatients ?? pagination.total}
           </p>
         </div>
         <div className="glass-card p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Unverified On Page
+            Unverified
           </p>
           <p className="text-3xl font-bold text-ink-950 mt-3">
             {totalUnverified}
@@ -574,7 +593,7 @@ export default function Patients() {
         </div>
         <div className="glass-card p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Active On Page
+            Active
           </p>
           <p className="text-3xl font-bold text-ink-950 mt-3">{totalActive}</p>
         </div>
@@ -1171,16 +1190,11 @@ export default function Patients() {
               </select>
             </div>
             <div>
-              {label("Payer Name", true)}
+              {label("Payer Name")}
               <input 
                 className="input-field" 
-                {...register("payerName", { required: "Payer Name is required" })} 
+                {...register("payerName")} 
               />
-              {errors.payerName && (
-                <p className="text-xs text-red-600 mt-1">
-                  {errors.payerName.message}
-                </p>
-              )}
             </div>
             <div>
               {label("Payer Member ID")}

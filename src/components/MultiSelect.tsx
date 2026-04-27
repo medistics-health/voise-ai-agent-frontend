@@ -80,12 +80,15 @@ export default function MultiSelect({
     }
   }, [isOpen])
 
+  const [showAll, setShowAll] = useState(false)
+  const VISIBLE_LIMIT = 3
+
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      <div className="min-h-9 border border-slate-300 rounded-lg bg-white p-2 flex flex-wrap gap-2 items-start">
+      <div className="min-h-9 border border-slate-300 rounded-lg bg-white p-2 flex flex-wrap gap-2 items-start max-h-32 overflow-y-auto">
         {selectedOptions.length > 0 ? (
           <>
-            {selectedOptions.map((option) => (
+            {(showAll ? selectedOptions : selectedOptions.slice(0, VISIBLE_LIMIT)).map((option) => (
               <div
                 key={option.id}
                 className="inline-flex items-center gap-1 bg-brand-100 text-brand-700 px-2 py-1 rounded text-xs font-medium"
@@ -104,6 +107,15 @@ export default function MultiSelect({
                 </button>
               </div>
             ))}
+            {selectedOptions.length > VISIBLE_LIMIT && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setShowAll((v) => !v); }}
+                className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                {showAll ? 'Show less' : `+${selectedOptions.length - VISIBLE_LIMIT} more`}
+              </button>
+            )}
             <input
               type="text"
               value={searchTerm}

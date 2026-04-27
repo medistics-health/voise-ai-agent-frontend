@@ -408,13 +408,13 @@ export default function Groups() {
                 <input
                   className="input-field"
                   {...register("npi", {
-                    maxLength: { value: 50, message: "Maximum 50 characters" },
                     pattern: {
-                      value: /^\S*$/,
-                      message: "No spaces allowed in NPI",
+                      value: /^\d{10}$/,
+                      message: "NPI must be exactly 10 digits",
                     },
                   })}
                   placeholder="National Provider Identifier"
+                  maxLength={10}
                 />
                 {errors.npi && (
                   <p className="text-xs text-red-600 mt-1">
@@ -470,6 +470,8 @@ export default function Groups() {
                 className="input-field"
                 {...register("streetAddress", {
                   maxLength: { value: 255, message: "Maximum 255 characters" },
+                  validate: (v) =>
+                    !v || v.trim().length > 0 || "Street address cannot be only spaces",
                 })}
                 placeholder="1265 PATERSON PLANK RD"
               />
@@ -486,6 +488,8 @@ export default function Groups() {
                 className="input-field"
                 {...register("streetAddress2", {
                   maxLength: { value: 255, message: "Maximum 255 characters" },
+                  validate: (v) =>
+                    !v || v.trim().length > 0 || "Street address 2 cannot be only spaces",
                 })}
                 placeholder="Apt, Floor, etc."
               />
@@ -506,6 +510,8 @@ export default function Groups() {
                       value: 100,
                       message: "Maximum 100 characters",
                     },
+                    validate: (v) =>
+                      !v || v.trim().length > 0 || "City cannot be only spaces",
                   })}
                   placeholder="SECAUCUS"
                 />
@@ -542,13 +548,15 @@ export default function Groups() {
                 <input
                   className="input-field"
                   {...register("zip", {
-                    maxLength: { value: 10, message: "Maximum 10 characters" },
                     pattern: {
-                      value: /^[0-9-]*$/,
-                      message: "ZIP code must contain only digits or hyphens",
+                      value: /^\d{5}(\d{4})?$/,
+                      message: "ZIP code must be 5 or 9 digits (e.g. 07094 or 070943242)",
                     },
+                    validate: (v) =>
+                      !v || v.trim().length > 0 || "ZIP code cannot be only spaces",
                   })}
-                  placeholder="070943242"
+                  placeholder="07094 or 070943242"
+                  maxLength={9}
                 />
                 {errors.zip && (
                   <p className="text-xs text-red-600 mt-1">
