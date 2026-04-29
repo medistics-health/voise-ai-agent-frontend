@@ -250,9 +250,9 @@ export default function Dashboard() {
           accent="bg-slate-500"
         />
         <MetricCard
-          label="Active Status"
+          label="Eligible Status"
           value={patientStats?.activePatients ?? 0}
-          helper="Patients already marked active"
+          helper="Patients confirmed eligible"
           icon={Stethoscope}
           accent="bg-emerald-500"
         />

@@ -158,13 +158,12 @@ const defaultPagination: Pagination = {
   totalPages: 0,
 };
 const statusOptions = [
-  "Active",
-  "Inactive",
-  "Unknown",
-  "Error",
-  "No Answer",
-  "Filed",
   "Pending",
+  "Eligible",
+  "Ineligible",
+  "Error",
+  "Unknown",
+  "No Answer",
 ] as const;
 const queryStatusOptions = [
   { value: "", label: "All statuses" },
@@ -172,13 +171,12 @@ const queryStatusOptions = [
   ...statusOptions.map((status) => ({ value: status, label: status })),
 ];
 const statusClasses: Record<string, string> = {
-  Active: "bg-emerald-100 text-emerald-700 border border-emerald-200",
-  Inactive: "bg-red-100 text-red-700 border border-red-200",
-  Unknown: "bg-slate-100 text-slate-700 border border-slate-200",
-  Error: "bg-orange-100 text-orange-700 border border-orange-200",
-  "No Answer": "bg-amber-100 text-amber-700 border border-amber-200",
-  Filed: "bg-violet-100 text-violet-700 border border-violet-200",
   Pending: "bg-blue-100 text-blue-700 border border-blue-200",
+  Eligible: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  Ineligible: "bg-red-100 text-red-700 border border-red-200",
+  Error: "bg-orange-100 text-orange-700 border border-orange-200",
+  Unknown: "bg-slate-100 text-slate-700 border border-slate-200",
+  "No Answer": "bg-amber-100 text-amber-700 border border-amber-200",
   Unverified: "bg-brand-50 text-brand-700 border border-brand-200",
 };
 
@@ -528,10 +526,10 @@ export default function Patients() {
     (patient) => !patient.memberPlanStatus,
   ).length;
   const totalActive = globalStats?.activePatients ?? patients?.filter(
-    (patient) => patient.memberPlanStatus === "Active",
+    (patient) => patient.memberPlanStatus === "Eligible",
   ).length;
   const totalNeedsReview = globalStats?.needsReviewPatients ?? patients?.filter((patient) =>
-    ["Unknown", "Error", "No Answer"].includes(patient.memberPlanStatus || ""),
+    ["Ineligible", "Error", "Unknown", "No Answer"].includes(patient.memberPlanStatus || ""),
   ).length;
 
   const allSelectedOnPage =
@@ -593,7 +591,7 @@ export default function Patients() {
         </div>
         <div className="glass-card p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Active
+            Eligible
           </p>
           <p className="text-3xl font-bold text-ink-950 mt-3">{totalActive}</p>
         </div>

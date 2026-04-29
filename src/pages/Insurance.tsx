@@ -280,14 +280,14 @@ export default function Insurance() {
                   {...register('phone', {
                     required: 'Phone number is required',
                     pattern: {
-                      value: /^\d{10}$/,
-                      message: 'Phone must be exactly 10 digits (no spaces or dashes)',
+                      value: /^[0-9()+\-\s]{7,20}$/,
+                      message: 'Enter a valid phone number',
                     },
                   })}
                   className="input-field"
-                  placeholder="5551234567"
+                  placeholder="+1 (555) 123-4567"
                   type="tel"
-                  maxLength={10}
+                  maxLength={20}
                 />
                 {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone.message}</p>}
               </div>

@@ -350,13 +350,12 @@ export default function CallDetail() {
                   onChange={(e) => setPatientStatus(e.target.value)}
                 >
                   <option value="">Select status</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="Unknown">Unknown</option>
-                  <option value="Error">Error</option>
-                  <option value="No Answer">No Answer</option>
-                  <option value="Filed">Filed</option>
                   <option value="Pending">Pending</option>
+                  <option value="Eligible">Eligible</option>
+                  <option value="Ineligible">Ineligible</option>
+                  <option value="Error">Error</option>
+                  <option value="Unknown">Unknown</option>
+                  <option value="No Answer">No Answer</option>
                 </select>
               </div>
               <button

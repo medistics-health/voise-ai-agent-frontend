@@ -82,12 +82,14 @@ export default function Upload() {
       {/* Header */}
       <div>
         <p className="text-sm text-slate-500 mt-2">
-          <strong>Imported Coverage:</strong> If `Insurance Name` or `Member ID`
-          is present, that row skips the UHC API. If both are present, the
-          patient is marked `Active`; if only one is present, the patient is
-          marked `Unknown`. <strong>Record Mapping:</strong> `Insurance Name`,
-          `Practice Location Name`, `Group Name`, and `Providers` are matched
-          to existing records. <strong>Auto-Queue:</strong> Only patients with
+          <strong>Routing Rules:</strong> If `Insurance Name` is{" "}
+          <strong>UnitedHealthcare</strong>, the patient is processed via{" "}
+          direct UHC API call (both with and without Member ID). Non-UHC
+          patients <strong>with a Member ID</strong> → added to{" "}
+          <strong>Call Queue</strong> (status = Pending). Non-UHC patients{" "}
+          <strong>without a Member ID</strong> → direct UHC API call.{" "}
+          <strong>Status after API:</strong> Eligible, Ineligible, Error, or
+          Unknown (never "Active"). <strong>Auto-Queue:</strong> Only patients with
           no coverage status move into the call queue.
         </p>
       </div>
