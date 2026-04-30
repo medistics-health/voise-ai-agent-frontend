@@ -413,7 +413,7 @@ export default function CallQueue() {
               {queues.map((queue) => {
                 const isSelected = queue.id === selectedQueueId
                 const progress = queue.totalCount > 0
-                  ? Math.round((queue.processedCount / queue.totalCount) * 100)
+                  ? Math.min(100, Math.round((queue.processedCount / queue.totalCount) * 100))
                   : 0
 
                 return (

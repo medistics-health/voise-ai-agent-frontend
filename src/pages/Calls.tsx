@@ -40,6 +40,7 @@ interface CallSession {
     id: string;
     firstName: string;
     lastName: string;
+    dob: string;
   } | null;
   note?: {
     id: string;
@@ -344,10 +345,21 @@ export default function Calls() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-600">
-                        {call.patient
-                          ? `${call.patient.firstName} ${call.patient.lastName}`
-                          : "—"}
+                      <td className="px-4 py-2.5">
+                        {call.patient ? (
+                          <div>
+                            <p className="text-ink-950 font-medium text-xs">
+                              {call.patient.firstName} {call.patient.lastName}
+                            </p>
+                            {call.patient.dob && (
+                              <p className="text-[10px] text-slate-500">
+                                DOB: {call.patient.dob}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-2.5">
                         <span

@@ -25,6 +25,7 @@ interface Job {
   eligibleCount: number
   notEligibleCount: number
   errorCount: number
+  queuedCount: number
   createdAt: string
 }
 
@@ -44,7 +45,7 @@ interface Coverage {
 interface Check {
   id: string
   patientId: string
-  status: 'ELIGIBLE' | 'NOT_ELIGIBLE' | 'ERROR' | 'PENDING' | 'RUNNING'
+  status: 'ELIGIBLE' | 'NOT_ELIGIBLE' | 'ERROR' | 'PENDING' | 'RUNNING' | 'QUEUED'
   importedPlanName?: string
   importedMemberId?: string
   payerStatus?: string
@@ -278,7 +279,7 @@ function JobDetail({ jobId }: { jobId: string }) {
   }
 
   const SortIcon = ({ k }: { k: SortKey }) => (sortKey === k ? (sortAsc ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : null)
-  const statuses = ['ALL', 'ELIGIBLE', 'NOT_ELIGIBLE', 'ERROR', 'PENDING', 'RUNNING']
+  const statuses = ['ALL', 'ELIGIBLE', 'QUEUED', 'NOT_ELIGIBLE', 'ERROR', 'PENDING', 'RUNNING']
 
   if (loading && !job) {
     return (
@@ -315,8 +316,7 @@ function JobDetail({ jobId }: { jobId: string }) {
           <ProgressBar done={job.completedCount} total={job.totalCount} />
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             <div className="rounded-2xl bg-brand-50 border border-brand-100 p-4"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Processed</p><p className="text-2xl font-bold text-ink-950 mt-1">{job.completedCount}/{job.totalCount}</p></div>
-            <div className="rounded-2xl bg-success-100 border border-success-600/10 p-4"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Eligible</p><p className="text-2xl font-bold text-success-600 mt-1">{job.eligibleCount ?? 0}</p></div>
-            <div className="rounded-2xl bg-red-50 border border-red-100 p-4"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Not Eligible</p><p className="text-2xl font-bold text-red-600 mt-1">{job.notEligibleCount ?? 0}</p></div>
+            <div className="rounded-2xl bg-brand-50 border border-brand-100 p-4"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Moved to Queue</p><p className="text-2xl font-bold text-brand-600 mt-1">{job.queuedCount ?? 0}</p></div>
             <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Errors</p><p className="text-2xl font-bold text-amber-600 mt-1">{job.errorCount ?? 0}</p></div>
           </div>
         </div>
@@ -331,7 +331,7 @@ function JobDetail({ jobId }: { jobId: string }) {
                 onClick={() => setStatusFilter(status)}
                 className={`px-3 py-2 rounded-full text-xs font-bold transition-all ${statusFilter === status ? 'bg-brand-500 text-white shadow-soft' : 'bg-white text-slate-600 hover:text-ink-950 border border-brand-100'}`}
               >
-                {status === 'ALL' ? `All (${checks.length})` : status.replace('_', ' ')}
+                {status === 'ALL' ? `All (${checks.length})` : status === 'QUEUED' ? 'Moved to Queue' : status.replace('_', ' ')}
               </button>
             ))}
           </div>
