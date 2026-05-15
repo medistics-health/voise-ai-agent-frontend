@@ -8,6 +8,7 @@ import {
   Upload,
   ClipboardList,
   ShieldCheck,
+  FolderSync,
   LogOut,
   Activity,
   PanelLeftClose,
@@ -78,9 +79,8 @@ export default function Layout() {
           {[
             { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true },
             { to: "/patients", icon: Users, label: "Patients" },
-            { to: "/upload", icon: Upload, label: "Upload CSV" },
+            { to: "/file-management", icon: FolderSync, label: "File Management" },
             { to: "/call-queue", icon: ListOrdered, label: "Queue Management" },
-            { to: "/results", icon: ClipboardList, label: "Results" },
             { to: "/coverage", icon: ShieldCheck, label: "Coverage" },
             { to: "/active-call-center", icon: Headphones, label: "Active Call Center" },
             { to: "/calls", icon: Phone, label: "Call Log" },

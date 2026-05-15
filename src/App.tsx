@@ -9,8 +9,7 @@ import Providers from "./pages/Providers";
 import Groups from "./pages/Groups";
 import Insurance from "./pages/Insurance";
 import PracticeLocations from "./pages/PracticeLocations";
-import Upload from "./pages/Upload";
-import Results from "./pages/Results";
+import FileManagement from "./pages/FileManagement";
 import Coverage from "./pages/Coverage";
 
 // ── NEW Phase 2 pages ──
@@ -45,9 +44,8 @@ export default function App() {
                 element={<PracticeLocations />}
               />
               <Route path="/insurances" element={<Insurance />} />
-              <Route path="/upload" element={<Upload />} />
-              <Route path="/results" element={<Results />} />
-              <Route path="/results/:jobId" element={<Results />} />
+              <Route path="/file-management" element={<FileManagement />} />
+              <Route path="/file-management/:jobId" element={<FileManagement />} />
               <Route path="/coverage" element={<Coverage />} />
               <Route path="/active-call-center" element={<ActiveCallCenter />} />
               {/* ── NEW Phase 2 routes ── */}
